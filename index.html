@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathKids - Belajar Berhitung Bersusun</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background: linear-gradient(135deg, #ecfeff 0%, #f5f3ff 50%, #fdf4ff 100%);
+            background-attachment: fixed;
+            color: #1e1b4b;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(#a5b4fc 1.25px, transparent 1.25px);
+            background-size: 24px 24px;
+            opacity: 0.35;
+            pointer-events: none;
+            z-index: -1;
+        }
+        /* Playful Soft-3D Card & Button Effects */
+        .neo-card {
+            border: 2.5px solid #312e81;
+            box-shadow: 0 6px 0 #312e81, 0 10px 20px -5px rgba(79, 70, 229, 0.15);
+        }
+        .neo-btn {
+            border: 2px solid #312e81;
+            box-shadow: 0 4px 0 #312e81;
+            transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .neo-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 0 #312e81;
+        }
+        .neo-btn:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #312e81;
+        }
+        .neo-btn-active {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+            color: #ffffff !important;
+            border-color: #1e1b4b !important;
+            box-shadow: 0 4px 0 #1e1b4b;
+        }
+        .dashed-box {
+            border: 2.5px dashed #818cf8;
+            transition: all 0.15s ease;
+        }
+        .dashed-box:focus {
+            border: 2.5px solid #0d9488;
+            background-color: #ccfbf1;
+            outline: none;
+            transform: scale(1.06);
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2);
+        }
+        .correct-box {
+            border: 2.5px solid #059669 !important;
+            background-color: #d1fae5 !important;
+            color: #065f46 !important;
+        }
+        .wrong-box {
+            border: 2.5px solid #e11d48 !important;
+            background-color: #ffe4e6 !important;
+            color: #9f1239 !important;
+            animation: shake 0.4s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-28 flex flex-col items-center">
+
+    <div class="w-full max-w-xl px-4 pt-4 pb-2 flex items-center justify-between gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+            <div id="category-level-badge" class="neo-btn bg-violet-100 px-3 py-1 rounded-full text-xs font-bold text-violet-950">
+                Tambah • Mudah
+            </div>
+            <div class="neo-btn bg-white px-3 py-1 rounded-full flex items-center gap-1.5 text-sm font-bold text-indigo-950" title="Skor untuk kategori & level ini">
+                <span>⭐</span>
+                <span id="score-badge">0</span>
+            </div>
+            <div class="neo-btn bg-rose-100 px-3 py-1 rounded-full flex items-center gap-1.5 text-xs font-bold text-rose-900" title="Streak untuk kategori & level ini">
+                <span>🔥 Streak:</span>
+                <span id="streak-badge">0</span>
+            </div>
+        </div>
+        <button onclick="toggleSound()" id="sound-btn" class="neo-btn bg-white w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0" title="Suara Efek">
+            🔊
+        </button>
+    </div>
+
+    <header class="w-full max-w-xl px-4 py-3">
+        <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-2">
+                <span class="w-9 h-9 rounded-2xl bg-gradient-to-br from-teal-400 to-emerald-500 border-2 border-indigo-950 flex items-center justify-center text-white font-bold text-xl shadow-xs">🧮</span>
+                <h1 class="text-2xl md:text-3xl font-bold text-indigo-950 tracking-tight">SusunAngka</h1>
+            </div>
+            <button onclick="generateAllQuestions()" class="neo-btn bg-teal-400 hover:bg-teal-300 text-indigo-950 font-bold px-3.5 py-1.5 rounded-xl text-sm flex items-center gap-1.5">
+                🔄 Acak Soal
+            </button>
+        </div>
+        <p id="header-desc" class="text-indigo-900/80 text-xs md:text-sm leading-relaxed mt-1">
+            Isi setiap kotak dengan satu angka. Kerjakan dari <b>kanan ke kiri</b>; setelah mengetik, kursor pindah sendiri ke kotak sebelah kiri.
+        </p>
+    </header>
+
+    <main class="w-full max-w-xl px-4 flex flex-col gap-4">
+        
+        <!-- 5 Tombol Operasi Hitung -->
+        <div class="grid grid-cols-5 gap-2">
+            <button onclick="setOperation('tambah')" id="op-tambah" class="op-btn neo-btn neo-btn-active bg-white/90 rounded-2xl p-2 flex flex-col items-center justify-center gap-1">
+                <span class="w-7 h-7 rounded-xl bg-teal-500 text-white flex items-center justify-center font-bold text-lg border-2 border-indigo-950">+</span>
+                <span class="text-xs font-bold">Tambah</span>
+            </button>
+            <button onclick="setOperation('kurang')" id="op-kurang" class="op-btn neo-btn bg-white/90 rounded-2xl p-2 flex flex-col items-center justify-center gap-1">
+                <span class="w-7 h-7 rounded-xl bg-pink-500 text-white flex items-center justify-center font-bold text-lg border-2 border-indigo-950">−</span>
+                <span class="text-xs font-bold">Kurang</span>
+            </button>
+            <button onclick="setOperation('kali')" id="op-kali" class="op-btn neo-btn bg-white/90 rounded-2xl p-2 flex flex-col items-center justify-center gap-1">
+                <span class="w-7 h-7 rounded-xl bg-indigo-500 text-white flex items-center justify-center font-bold text-lg border-2 border-indigo-950">×</span>
+                <span class="text-xs font-bold">Kali</span>
+            </button>
+            <button onclick="setOperation('bagi')" id="op-bagi" class="op-btn neo-btn bg-white/90 rounded-2xl p-2 flex flex-col items-center justify-center gap-1">
+                <span class="w-7 h-7 rounded-xl bg-cyan-500 text-white flex items-center justify-center font-bold text-lg border-2 border-indigo-950">:</span>
+                <span class="text-xs font-bold">Bagi</span>
+            </button>
+            <button onclick="setOperation('cerita')" id="op-cerita" class="op-btn neo-btn bg-white/90 rounded-2xl p-2 flex flex-col items-center justify-center gap-1">
+                <span class="w-7 h-7 rounded-xl bg-orange-400 text-white flex items-center justify-center font-bold text-sm border-2 border-indigo-950">📖</span>
+                <span class="text-[11px] font-bold leading-none text-center">Cerita</span>
+            </button>
+        </div>
+
+        <!-- Baris Tingkat Kesulitan & Checkbox Simpanan -->
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="grid grid-cols-3 gap-2 flex-1">
+                <button onclick="setDifficulty('mudah')" id="dif-mudah" class="dif-btn neo-btn neo-btn-active bg-white/90 rounded-xl py-1.5 px-2 text-center">
+                    <div class="text-xs font-bold">🌱 Pemula</div>
+                    <div class="text-[10px] opacity-80">Kelas 2–3</div>
+                </button>
+                <button onclick="setDifficulty('sedang')" id="dif-sedang" class="dif-btn neo-btn bg-white/90 rounded-xl py-1.5 px-2 text-center">
+                    <div class="text-xs font-bold">🚀 Mahir</div>
+                    <div class="text-[10px] opacity-80">Kelas 3–4</div>
+                </button>
+                <button onclick="setDifficulty('sulit')" id="dif-sulit" class="dif-btn neo-btn bg-white/90 rounded-xl py-1.5 px-2 text-center">
+                    <div class="text-xs font-bold">👑 Juara</div>
+                    <div class="text-[10px] opacity-80">Kelas 4–6</div>
+                </button>
+            </div>
+
+            <label id="carry-toggle-wrapper" class="flex items-center gap-2 cursor-pointer select-none px-2 py-1 transition-opacity">
+                <input type="checkbox" id="toggle-carry" checked onchange="toggleCarry()" class="sr-only peer">
+                <div class="w-6 h-6 rounded-lg border-2 border-indigo-950 bg-white peer-checked:bg-teal-500 flex items-center justify-center text-white font-bold text-sm transition">
+                    ✓
+                </div>
+                <span class="text-xs font-bold text-indigo-950">Kotak simpanan</span>
+            </label>
+        </div>
+
+        <!-- Accordion Cara Menghitung -->
+        <div class="neo-card bg-gradient-to-r from-teal-400 to-cyan-400 rounded-2xl overflow-hidden">
+            <button onclick="toggleGuide()" class="w-full px-4 py-2.5 text-left font-bold text-indigo-950 flex justify-between items-center text-sm">
+                <span id="guide-title">▶ Panduan langkah menghitung tambah bersusun</span>
+            </button>
+            <div id="guide-body" class="hidden bg-cyan-50 px-4 py-3 text-xs md:text-sm text-indigo-950 border-t-2 border-indigo-950 space-y-1.5">
+                <p id="guide-step-1">1. Kerjakan mulai dari kolom paling <b>kanan (satuan)</b> terlebih dahulu.</p>
+                <p id="guide-step-2">2. Jika hasil jumlah mencapai 10 atau lebih, tulis angka satuan di bawah dan tulis angka puluhan di <b>kotak simpanan</b> di atas kolom sebelah kiri.</p>
+                <p id="guide-step-3">3. Kursor otomatis bergeser ke kiri setiap kali kamu selesai mengetik 1 angka!</p>
+            </div>
+        </div>
+
+        <!-- Daftar Kartu Soal -->
+        <div id="questions-list" class="flex flex-col gap-5">
+            <!-- Diisi otomatis oleh JavaScript -->
+        </div>
+
+        <!-- Tombol Aksi Bawah -->
+        <div class="flex gap-3 pt-2">
+            <button onclick="checkAllAnswers()" class="neo-btn flex-1 py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold rounded-2xl text-base flex items-center justify-center gap-2">
+                ✨ Periksa Semua Jawaban
+            </button>
+        </div>
+    </main>
+
+    <!-- Numpad Bantuan untuk Layar Sentuh / Mobile -->
+    <div class="fixed bottom-0 left-0 right-0 bg-indigo-950/95 backdrop-blur border-t-2 border-indigo-900 p-2 z-40 shadow-lg">
+        <div class="max-w-xl mx-auto flex flex-col gap-1.5">
+            <div class="flex justify-between items-center px-1">
+                <span class="text-[11px] font-bold text-indigo-200">Papan Angka Cepat (Klik kotak lalu tekan angka):</span>
+                <button onclick="clearCurrentInput()" class="text-xs font-bold text-pink-300 hover:text-pink-200 hover:underline">⌫ Hapus Kotak</button>
+            </div>
+            <div class="grid grid-cols-10 gap-1">
+                <button onclick="inputFromNumpad('1')" class="neo-btn bg-violet-50 hover:bg-teal-200 text-indigo-950 py-2 rounded-xl font-bold text-base">1</button>
+                <button onclick="inputFromNumpad('2')" class="neo-btn bg-violet-50 hover:bg-teal-200 text-indigo-950 py-2 rounded-xl font-bold text-base">2</button>
+                <button onclick="inputFromNumpad('3')" class="neo-btn bg-violet-50 hover:bg-teal-200 text-indigo-950 py-2 rounded-xl font-bold text-base">3</button>
+                <button onclick="inputFromNumpad('4')" class="neo-btn bg-violet-50 hover:bg-teal-200 text-indigo-950 py-2 rounded-xl font-bold text-base">4</button>
+                <button onclick="inputFromNumpad('5')" class="neo-btn bg-violet-50 hover:bg-teal-200 text-indigo-950 py-2 rounded-xl font-bold text-base">5</button>
+                <button onclick="inputFromNumpad('6')" class="neo-btn bg-violet-50 hover:bg-teal-200 text-indigo-950 py-2 rounded-xl font-bold text-base">6</button>
+                <button onclick="inputFromNumpad('7')" class="neo-btn bg-violet-50 hover:bg-teal-200 text-indigo-950 py-2 rounded-xl font-bold text-base">7</button>
+                <button onclick="inputFromNumpad('8')" class="neo-btn bg-violet-50 hover:bg-teal-200 text-indigo-950 py-2 rounded-xl font-bold text-base">8</button>
+                <button onclick="inputFromNumpad('9')" class="neo-btn bg-violet-50 hover:bg-teal-200 text-indigo-950 py-2 rounded-xl font-bold text-base">9</button>
+                <button onclick="inputFromNumpad('0')" class="neo-btn bg-violet-50 hover:bg-teal-200 text-indigo-950 py-2 rounded-xl font-bold text-base">0</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Umpan Balik -->
+    <div id="feedback-modal" class="fixed inset-0 bg-indigo-950/60 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+        <div class="neo-card bg-white rounded-3xl p-6 max-w-sm w-full text-center">
+            <div id="modal-emoji" class="text-5xl mb-3">🎉</div>
+            <h3 id="modal-title" class="text-xl font-bold text-indigo-950 mb-1">Luar Biasa!</h3>
+            <p id="modal-desc" class="text-sm text-indigo-900/75 mb-5">Semua jawabanmu benar!</p>
+            <div class="flex gap-2">
+                <button onclick="closeModal(false)" class="neo-btn flex-1 py-2.5 bg-violet-100 text-indigo-950 font-bold rounded-xl text-sm">Tutup</button>
+                <button onclick="closeModal(true)" class="neo-btn flex-1 py-2.5 bg-teal-400 text-indigo-950 font-bold rounded-xl text-sm">Soal Baru 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Umpan Balik -->
+    <div id="feedback-modal" class="fixed inset-0 bg-black/50 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+        <div class="neo-card bg-white rounded-3xl p-6 max-w-sm w-full text-center">
+            <div id="modal-emoji" class="text-5xl mb-3">🎉</div>
+            <h3 id="modal-title" class="text-xl font-bold text-slate-900 mb-1">Luar Biasa!</h3>
+            <p id="modal-desc" class="text-sm text-slate-600 mb-5">Semua jawabanmu benar!</p>
+            <div class="flex gap-2">
+                <button onclick="closeModal(false)" class="neo-btn flex-1 py-2.5 bg-slate-100 font-bold rounded-xl text-sm">Tutup</button>
+                <button onclick="closeModal(true)" class="neo-btn flex-1 py-2.5 bg-amber-400 font-bold rounded-xl text-sm">Soal Baru 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const OPERATIONS = ['tambah', 'kurang', 'kali', 'bagi', 'cerita'];
+        const DIFFICULTIES = ['mudah', 'sedang', 'sulit'];
+
+        function createInitialStats() {
+            const stats = {};
+            OPERATIONS.forEach(op => {
+                stats[op] = {};
+                DIFFICULTIES.forEach(dif => {
+                    stats[op][dif] = { score: 0, streak: 0 };
+                });
+            });
+            return stats;
+        }
+
+        let state = {
+            operation: 'tambah',
+            difficulty: 'mudah',
+            showCarry: true,
+            stats: createInitialStats(),
+            soundEnabled: true,
+            questions: [],
+            lastFocusedInput: null
+        };
+
+        function getCurrentStats() {
+            return state.stats[state.operation][state.difficulty];
+        }
+
+        // Efek suara sintetis ringan tanpa file eksternal (Web Audio API)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type = 'sine', duration = 0.12) {
+            if (!state.soundEnabled) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            document.getElementById('sound-btn').textContent = state.soundEnabled ? '🔊' : '🔇';
+        }
+
+        function setOperation(op) {
+            state.operation = op;
+            playTone(520, 'triangle', 0.08);
+            document.querySelectorAll('.op-btn').forEach(btn => btn.classList.remove('neo-btn-active'));
+            document.getElementById(`op-${op}`).classList.add('neo-btn-active');
+
+            const headerDesc = document.getElementById('header-desc');
+            if (op === 'bagi') {
+                headerDesc.innerHTML = 'Metode <b>Porogapit (Pembagian Bersusun ke Bawah)</b>: Isi kotak secara berurutan mengikuti langkah pembagian dari <b>kiri ke kanan</b> dan turun ke bawah.';
+            } else {
+                headerDesc.innerHTML = 'Isi setiap kotak dengan satu angka. Kerjakan dari <b>kanan ke kiri</b>; setelah mengetik, kursor pindah sendiri ke kotak sebelah kiri.';
+            }
+
+            const titles = {
+                tambah: '▶ Cara menghitung tambah bersusun',
+                kurang: '▶ Cara menghitung kurang bersusun',
+                kali: '▶ Cara menghitung kali bersusun',
+                bagi: '▶ Cara menghitung bagi bersusun (Porogapit)',
+                cerita: '▶ Cara menyelesaikan soal cerita bersusun'
+            };
+            const guides = {
+                tambah: [
+                    '1. Kerjakan mulai dari kolom paling <b>kanan (satuan)</b> terlebih dahulu.',
+                    '2. Jika hasil jumlah mencapai 10 atau lebih, tulis angka satuan di bawah dan tulis angka puluhan di <b>kotak simpanan</b> di atas kolom sebelah kiri.',
+                    '3. Tambahkan angka simpanan tersebut saat menghitung kolom di sebelah kirinya.'
+                ],
+                kurang: [
+                    '1. Kurangkan angka mulai dari kolom paling <b>kanan (satuan)</b> ke kiri.',
+                    '2. Pada pengurangan bersusun tidak ada kotak simpanan di atas. Jika angka atas lebih kecil dari angka bawah, ambil 1 puluhan (+10) dari angka di sebelah kirinya.',
+                    '3. Ingat bahwa angka di sebelah kiri yang sudah diambil tadi berkurang 1.'
+                ],
+                kali: [
+                    '1. Kalikan angka bawah dengan setiap digit angka atas mulai dari paling <b>kanan (satuan)</b>.',
+                    '2. Jika hasil kali mencapai 10 atau lebih, tulis satuannya di bawah dan catat puluhannya pada <b>kotak simpanan</b> di atas kolom sebelah kiri.',
+                    '3. Kalikan kolom sebelah kiri lalu tambahkan dengan angka di kotak simpanan tadi.'
+                ],
+                bagi: [
+                    '1. <b>Bagi:</b> Bagilah angka dari sebelah kiri dengan pembagi, lalu tulis hasilnya di <b>kotak paling atas (hasil bagi)</b>.',
+                    '2. <b>Kali:</b> Kalikan angka hasil di atas tadi dengan pembagi, lalu tulis hasilnya di kotak bawah angka yang dibagi.',
+                    '3. <b>Kurang & Turunkan:</b> Kurangkan kedua angka tersebut, turunkan angka di sebelahnya, lalu ulangi langkah sampai sisa akhirnya <b>0</b>!'
+                ],
+                cerita: [
+                    '1. Baca cerita dengan teliti untuk menentukan operasi hitung yang tepat.',
+                    '2. Kotak simpanan di atas hanya muncul untuk soal <b>penjumlahan</b> dan <b>perkalian</b>.',
+                    '3. Untuk soal pembagian, gunakan metode pembagian bersusun ke bawah (porogapit).'
+                ]
+            };
+
+            const isGuideOpen = !document.getElementById('guide-body').classList.contains('hidden');
+            document.getElementById('guide-title').textContent = isGuideOpen ? titles[op].replace('▶', '▼') : titles[op];
+            document.getElementById('guide-step-1').innerHTML = guides[op][0];
+            document.getElementById('guide-step-2').innerHTML = guides[op][1];
+            document.getElementById('guide-step-3').innerHTML = guides[op][2];
+
+            // Tampilkan opsi checkbox kotak simpanan hanya jika relevan (Tambah, Kali, atau Soal Cerita)
+            const carryWrapper = document.getElementById('carry-toggle-wrapper');
+            if (op === 'kurang' || op === 'bagi') {
+                carryWrapper.classList.add('hidden');
+            } else {
+                carryWrapper.classList.remove('hidden');
+            }
+
+            updateScoreUI();
+            generateAllQuestions();
+        }
+
+        function setDifficulty(dif) {
+            state.difficulty = dif;
+            playTone(520, 'triangle', 0.08);
+            document.querySelectorAll('.dif-btn').forEach(btn => btn.classList.remove('neo-btn-active'));
+            document.getElementById(`dif-${dif}`).classList.add('neo-btn-active');
+            updateScoreUI();
+            generateAllQuestions();
+        }
+
+        function toggleCarry() {
+            state.showCarry = document.getElementById('toggle-carry').checked;
+            playTone(600, 'sine', 0.06);
+            renderQuestions();
+        }
+
+        function toggleGuide() {
+            const body = document.getElementById('guide-body');
+            const title = document.getElementById('guide-title');
+            body.classList.toggle('hidden');
+            if (body.classList.contains('hidden')) {
+                title.textContent = title.textContent.replace('▼', '▶');
+            } else {
+                title.textContent = title.textContent.replace('▶', '▼');
+            }
+        }
+
+        function generateAllQuestions() {
+            state.questions = [
+                createSingleQuestion(0),
+                createSingleQuestion(1),
+                createSingleQuestion(2)
+            ];
+            renderQuestions();
+        }
+
+        function buildDivisionData(divisor, quotient) {
+            const num1 = divisor * quotient;
+            const dividendStr = num1.toString();
+            const dividendDigits = dividendStr.split('').map(Number);
+            const numCols = dividendDigits.length;
+
+            const steps = [];
+            let currentVal = 0;
+            let started = false;
+
+            for (let col = 0; col < numCols; col++) {
+                currentVal = currentVal * 10 + dividendDigits[col];
+
+                // Jika belum mulai dan angka saat ini masih lebih kecil dari pembagi, gabungkan dengan digit berikutnya
+                if (!started && currentVal < divisor && col < numCols - 1) {
+                    continue;
+                }
+
+                started = true;
+                const qDigit = Math.floor(currentVal / divisor);
+                const prod = qDigit * divisor;
+                const rem = currentVal - prod;
+
+                let nextWorkingVal = null;
+                if (col < numCols - 1) {
+                    nextWorkingVal = rem * 10 + dividendDigits[col + 1];
+                }
+
+                steps.push({
+                    stepIndex: steps.length,
+                    col: col,
+                    workingVal: currentVal,
+                    quotientDigit: qDigit,
+                    product: prod,
+                    remainder: rem,
+                    nextWorkingVal: nextWorkingVal,
+                    nextDigit: col < numCols - 1 ? dividendDigits[col + 1] : null
+                });
+
+                currentVal = rem;
+            }
+
+            // Susun urutan kotak isian sesuai alur Porogapit yang benar:
+            // Bagi (tulis di atas) -> Kali (tulis di bawah) -> Kurang & Turunkan angka berikutnya
+            const flatInputs = [];
+
+            steps.forEach((st, idx) => {
+                // 1. Kotak Hasil Bagi di atas (Quotient)
+                flatInputs.push({
+                    id: `div-q-${st.col}`,
+                    expected: st.quotientDigit.toString(),
+                    role: 'quotient',
+                    col: st.col,
+                    hint: `Langkah: <b>${st.workingVal} : ${divisor}</b> = ? (Tulis hasil bagi di kotak atas)`
+                });
+
+                // 2. Kotak Hasil Kali di bawah angka yang dibagi (Product)
+                const prodStr = st.product.toString();
+                const prodStartCol = st.col - prodStr.length + 1;
+                for (let c = 0; c < prodStr.length; c++) {
+                    flatInputs.push({
+                        id: `div-p-${idx}-${c}`,
+                        expected: prodStr[c],
+                        role: 'product',
+                        step: idx,
+                        col: prodStartCol + c,
+                        hint: `Langkah: Kalikan <b>${st.quotientDigit} × ${divisor} = ${st.product}</b> (Tulis di bawah untuk dikurangkan)`
+                    });
+                }
+
+                // 3. Kotak Hasil Kurang & Turunkan Angka Berikutnya
+                if (idx < steps.length - 1) {
+                    // Jika sisa pengurangan > 0, tulis sisanya. Jika sisa 0, langsung turunkan angka berikutnya
+                    const subStr = st.remainder > 0
+                        ? `${st.remainder}${st.nextDigit}`
+                        : `${st.nextDigit}`;
+                    const subEndCol = st.col + 1;
+                    const subStartCol = subEndCol - subStr.length + 1;
+
+                    for (let c = 0; c < subStr.length; c++) {
+                        const isBroughtDown = (subStartCol + c === subEndCol);
+                        const hintText = isBroughtDown
+                            ? `Langkah: Turunkan angka <b>${st.nextDigit}</b> dari atas ke sebelah kanan`
+                            : `Langkah: Kurangkan <b>${st.workingVal} − ${st.product} = ${st.remainder}</b>`;
+                        flatInputs.push({
+                            id: `div-w-${idx}-${c}`,
+                            expected: subStr[c],
+                            role: 'working',
+                            step: idx,
+                            col: subStartCol + c,
+                            hint: hintText
+                        });
+                    }
+                } else {
+                    // Sisa akhir (0)
+                    flatInputs.push({
+                        id: `div-rem-${idx}`,
+                        expected: '0',
+                        role: 'remainder',
+                        step: idx,
+                        col: st.col,
+                        hint: `Langkah terakhir: Kurangkan <b>${st.workingVal} − ${st.product} = 0</b> (Selesai!)`
+                    });
+                }
+            });
+
+            return {
+                num1,
+                num2: divisor,
+                answer: quotient,
+                dividendDigits,
+                steps,
+                flatInputs,
+                numCols
+            };
+        }
+
+        function createSingleQuestion(index) {
+            let num1, num2, op = state.operation;
+            let storyText = null;
+            let divisionData = null;
+
+            // Jika mode Soal Cerita, acak antara tambah, kurang, kali, atau bagi
+            let actualOp = op;
+            if (op === 'cerita') {
+                const ops = ['tambah', 'kurang', 'kali', 'bagi'];
+                actualOp = ops[index % ops.length];
+            }
+
+            if (state.difficulty === 'mudah') {
+                num1 = Math.floor(Math.random() * 75) + 11;
+                num2 = Math.floor(Math.random() * 75) + 12;
+            } else if (state.difficulty === 'sedang') {
+                num1 = Math.floor(Math.random() * 350) + 65;
+                num2 = Math.floor(Math.random() * 250) + 45;
+            } else {
+                num1 = Math.floor(Math.random() * 2500) + 350;
+                num2 = Math.floor(Math.random() * 1500) + 250;
+            }
+
+            if (actualOp === 'kurang') {
+                if (num1 < num2) [num1, num2] = [num2, num1];
+                if (num1 === num2) num1 += 15;
+            } else if (actualOp === 'kali') {
+                if (state.difficulty === 'mudah') {
+                    num1 = Math.floor(Math.random() * 35) + 12;
+                    num2 = Math.floor(Math.random() * 7) + 2;
+                } else if (state.difficulty === 'sedang') {
+                    num1 = Math.floor(Math.random() * 120) + 25;
+                    num2 = Math.floor(Math.random() * 8) + 2;
+                } else {
+                    num1 = Math.floor(Math.random() * 350) + 110;
+                    num2 = Math.floor(Math.random() * 8) + 2;
+                }
+            } else if (actualOp === 'bagi') {
+                let divisor, quotient;
+                if (state.difficulty === 'mudah') {
+                    // Mudah: 2 digit dibagi 1 digit, digit puluhan langsung bisa dibagi pembagi (tanpa nol di tengah)
+                    divisor = Math.floor(Math.random() * 6) + 2; // 2..7
+                    const q1 = Math.floor(Math.random() * 3) + 1; // 1..3
+                    const q2 = Math.floor(Math.random() * 8) + 1; // 1..8
+                    quotient = q1 * 10 + q2;
+                } else if (state.difficulty === 'sedang') {
+                    // Sedang: hasil bagi 2 digit (12..48) dengan pembagi 3..8 (bisa 2 digit atau 3 digit dibagi 1 digit)
+                    divisor = Math.floor(Math.random() * 6) + 3; // 3..8
+                    const q1 = Math.floor(Math.random() * 4) + 1; // 1..4
+                    const q2 = Math.floor(Math.random() * 8) + 1; // 1..8
+                    quotient = q1 * 10 + q2;
+                } else {
+                    // Sulit: hasil bagi 3 digit (112..389) dengan pembagi 3..9
+                    divisor = Math.floor(Math.random() * 7) + 3; // 3..9
+                    const q1 = Math.floor(Math.random() * 3) + 1; // 1..3
+                    const q2 = Math.floor(Math.random() * 8) + 1; // 1..8
+                    const q3 = Math.floor(Math.random() * 8) + 1; // 1..8
+                    quotient = q1 * 100 + q2 * 10 + q3;
+                }
+                divisionData = buildDivisionData(divisor, quotient);
+                num1 = divisionData.num1;
+                num2 = divisionData.num2;
+            }
+
+            let answer = 0;
+            let symbol = '+';
+            if (actualOp === 'tambah') { answer = num1 + num2; symbol = '+'; }
+            if (actualOp === 'kurang') { answer = num1 - num2; symbol = '-'; }
+            if (actualOp === 'kali')   { answer = num1 * num2; symbol = '×'; }
+            if (actualOp === 'bagi')   { answer = divisionData.answer; symbol = ':'; }
+
+            if (op === 'cerita') {
+                const names = ['Budi', 'Siti', 'Rina', 'Doni', 'Putri'];
+                const items = ['kelereng', 'stiker', 'buku cerita', 'apel', 'pensil warna'];
+                const name = names[index % names.length];
+                const item = items[(index + 1) % items.length];
+
+                if (actualOp === 'tambah') {
+                    storyText = `${name} memiliki <b>${num1}</b> ${item}, lalu diberi lagi oleh Ibu sebanyak <b>${num2}</b> ${item}. Berapa jumlah ${item} ${name} sekarang?`;
+                } else if (actualOp === 'kurang') {
+                    storyText = `${name} mempunyai <b>${num1}</b> ${item}. Sebanyak <b>${num2}</b> ${item} diberikan kepada adiknya. Berapa sisa ${item} ${name}?`;
+                } else if (actualOp === 'kali') {
+                    storyText = `Ada <b>${num2}</b> kotak di meja. Setiap kotak berisi <b>${num1}</b> ${item}. Berapa total seluruh ${item}?`;
+                } else {
+                    storyText = `${name} memiliki <b>${num1}</b> ${item} yang akan dibagikan sama rata ke dalam <b>${num2}</b> wadah. Berapa isi ${item} di setiap wadah?`;
+                }
+            }
+
+            return {
+                id: index + 1,
+                num1,
+                num2,
+                actualOp,
+                symbol,
+                answerStr: answer.toString(),
+                divisionData,
+                storyText,
+                solved: false
+            };
+        }
+
+        function renderDivisionLayout(q, qIndex) {
+            const d = q.divisionData;
+            const numCols = d.numCols;
+
+            // Petakan urutan step index untuk setiap kotak di dalam soal ini
+            let seqMap = {};
+            d.flatInputs.forEach((item, seqIdx) => {
+                seqMap[item.id] = { seqIdx, expected: item.expected, hint: item.hint };
+            });
+
+            const makeInputBox = (id, extraClass = '') => {
+                const info = seqMap[id];
+                const stepBadge = info.seqIdx + 1;
+                return `
+                    <div class="relative">
+                        <span class="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-violet-700 text-white text-[9px] font-bold flex items-center justify-center z-10 pointer-events-none">${stepBadge}</span>
+                        <input type="text" inputmode="numeric" maxlength="1"
+                            id="ans-${qIndex}-${info.seqIdx}"
+                            data-q="${qIndex}" data-col="${info.seqIdx}"
+                            data-expected="${info.expected}"
+                            data-hint="${info.hint.replace(/"/g, '&quot;')}"
+                            aria-label="Langkah ${stepBadge}"
+                            class="ans-box dashed-box w-11 h-11 rounded-xl text-center font-bold text-xl text-indigo-950 bg-indigo-50/50 ${extraClass}">
+                    </div>
+                `;
+            };
+
+            let html = `<div class="flex flex-col items-center w-full">`;
+
+            // Banner Petunjuk Langkah Aktif untuk membantu anak mengikuti urutan Porogapit
+            const firstHint = d.flatInputs[0] ? d.flatInputs[0].hint : '';
+            html += `
+                <div id="div-hint-${qIndex}" class="w-full mb-3 px-3 py-2 rounded-xl bg-teal-50 border-2 border-teal-300 text-xs text-teal-950 text-center">
+                    💡 ${firstHint}
+                </div>
+            `;
+
+            html += `<div class="inline-block">`;
+
+            // 1. Baris Hasil Bagi di Atas (Quotient) - Hanya di kolom yang memiliki digit hasil bagi
+            html += `<div class="flex items-center gap-1.5 mb-1.5">`;
+            html += `<div class="w-16"></div>`; // Ruang di atas pembagi
+            for (let c = 0; c < numCols; c++) {
+                if (seqMap[`div-q-${c}`]) {
+                    html += makeInputBox(`div-q-${c}`, 'bg-teal-50/90 border-teal-500');
+                } else {
+                    html += `<div class="w-11 h-11"></div>`;
+                }
+            }
+            html += `</div>`;
+
+            // 2. Baris Pembagi & Angka yang Dibagi (dengan garis kurung Porogapit)
+            html += `<div class="flex items-center gap-1.5">`;
+            html += `
+                <div class="w-16 h-11 flex items-center justify-end pr-3 font-bold text-2xl text-violet-700 relative">
+                    <span>${d.num2}</span>
+                    <span class="absolute right-0.5 top-0 bottom-0 w-2 border-r-[3.5px] border-indigo-950 transform -skew-x-12"></span>
+                </div>
+            `;
+            html += `<div class="flex items-center gap-1.5 border-t-[3.5px] border-indigo-950 pt-1">`;
+            d.dividendDigits.forEach(dig => {
+                html += `<div class="w-11 h-10 flex items-center justify-center font-bold text-2xl text-indigo-950">${dig}</div>`;
+            });
+            html += `</div></div>`;
+
+            // 3. Langkah-langkah Pengurangan Bersusun ke Bawah
+            d.steps.forEach((st, idx) => {
+                const prodStr = st.product.toString();
+                const prodStartCol = st.col - prodStr.length + 1;
+
+                // Baris hasil kali yang akan dikurangkan
+                html += `<div class="flex items-center gap-1.5 mt-2">`;
+                html += `<div class="w-16"></div>`;
+                for (let c = 0; c < numCols; c++) {
+                    if (c >= prodStartCol && c <= st.col) {
+                        const charIdx = c - prodStartCol;
+                        const showMinus = (c === prodStartCol);
+                        html += `
+                            <div class="relative">
+                                ${showMinus ? `<span class="absolute -left-5 top-2 font-bold text-xl text-pink-600">−</span>` : ''}
+                                ${makeInputBox(`div-p-${idx}-${charIdx}`)}
+                            </div>
+                        `;
+                    } else {
+                        html += `<div class="w-11 h-11"></div>`;
+                    }
+                }
+                html += `</div>`;
+
+                // Garis pengurangan per langkah
+                const lineStart = Math.max(0, prodStartCol);
+                const lineEnd = idx < d.steps.length - 1 ? st.col + 1 : st.col;
+                html += `<div class="flex items-center gap-1.5 my-1">`;
+                html += `<div class="w-16"></div>`;
+                for (let c = 0; c < numCols; c++) {
+                    if (c >= lineStart && c <= lineEnd) {
+                        html += `<div class="w-11 border-b-[3px] border-indigo-950"></div>`;
+                    } else {
+                        html += `<div class="w-11"></div>`;
+                    }
+                }
+                html += `</div>`;
+
+                // Baris sisa pengurangan + turunkan angka berikutnya
+                html += `<div class="flex items-center gap-1.5 mt-1.5">`;
+                html += `<div class="w-16"></div>`;
+                if (idx < d.steps.length - 1) {
+                    const subStr = st.remainder > 0
+                        ? `${st.remainder}${st.nextDigit}`
+                        : `${st.nextDigit}`;
+                    const subEndCol = st.col + 1;
+                    const subStartCol = subEndCol - subStr.length + 1;
+
+                    for (let c = 0; c < numCols; c++) {
+                        if (c >= subStartCol && c <= subEndCol) {
+                            const charIdx = c - subStartCol;
+                            const isBroughtDown = (c === subEndCol);
+                            html += `
+                                <div class="relative flex flex-col items-center">
+                                    ${isBroughtDown ? `<span class="text-xs text-teal-600 font-bold leading-none mb-1">↓</span>` : `<span class="text-xs leading-none mb-1 opacity-0">↓</span>`}
+                                    ${makeInputBox(`div-w-${idx}-${charIdx}`)}
+                                </div>
+                            `;
+                        } else {
+                            html += `<div class="w-11 h-11"></div>`;
+                        }
+                    }
+                } else {
+                    // Baris sisa akhir (0)
+                    for (let c = 0; c < numCols; c++) {
+                        if (c === st.col) {
+                            html += makeInputBox(`div-rem-${idx}`);
+                        } else {
+                            html += `<div class="w-11 h-11"></div>`;
+                        }
+                    }
+                }
+                html += `</div>`;
+            });
+
+            html += `</div></div>`;
+            return html;
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questions-list');
+            container.innerHTML = '';
+
+            const badgeColors = ['bg-violet-600', 'bg-teal-500', 'bg-pink-500'];
+
+            state.questions.forEach((q, qIndex) => {
+                let innerMathHtml = '';
+
+                if (q.actualOp === 'bagi' && q.divisionData) {
+                    innerMathHtml = renderDivisionLayout(q, qIndex);
+                } else {
+                    const maxCols = Math.max(q.num1.toString().length, q.num2.toString().length, q.answerStr.length);
+                    const n1Chars = q.num1.toString().padStart(maxCols, ' ').split('');
+                    const n2Chars = q.num2.toString().padStart(maxCols, ' ').split('');
+                    const ansLen = q.answerStr.length;
+
+                    // Kotak simpanan di atas HANYA untuk Penjumlahan (tambah) dan Perkalian (kali)
+                    const needsCarryBox = state.showCarry && (q.actualOp === 'tambah' || q.actualOp === 'kali');
+                    let carryHtml = '';
+                    if (needsCarryBox) {
+                        carryHtml = `<div class="flex justify-end gap-2 mb-1.5">`;
+                        for (let c = 0; c < maxCols; c++) {
+                            if (c < maxCols - 1) {
+                                carryHtml += `
+                                    <div class="w-11 flex justify-center">
+                                        <input type="text" inputmode="numeric" maxlength="1"
+                                            data-q="${qIndex}" data-carry="${c}"
+                                            aria-label="Simpanan kolom ${c + 1}"
+                                            class="carry-box dashed-box w-9 h-9 rounded-xl text-center font-bold text-sm text-violet-700 bg-violet-50/80">
+                                    </div>
+                                `;
+                            } else {
+                                carryHtml += `<div class="w-11 h-9"></div>`;
+                            }
+                        }
+                        carryHtml += `</div>`;
+                    }
+
+                    // Baris angka pertama
+                    let row1Html = `<div class="flex justify-end gap-2 mb-1">`;
+                    n1Chars.forEach(ch => {
+                        row1Html += `<div class="w-11 h-10 flex items-center justify-center font-bold text-2xl text-indigo-950">${ch === ' ' ? '' : ch}</div>`;
+                    });
+                    row1Html += `</div>`;
+
+                    // Baris angka kedua + tanda operasi di kiri
+                    let row2Html = `<div class="flex justify-end items-center gap-2 pb-2 border-b-[3.5px] border-indigo-950 relative">`;
+                    row2Html += `<span class="absolute left-0 font-bold text-2xl text-teal-600 -translate-x-6">${q.symbol}</span>`;
+                    n2Chars.forEach(ch => {
+                        row2Html += `<div class="w-11 h-10 flex items-center justify-center font-bold text-2xl text-indigo-950">${ch === ' ' ? '' : ch}</div>`;
+                    });
+                    row2Html += `</div>`;
+
+                    // Baris kotak jawaban (Kanan ke Kiri)
+                    let ansHtml = `<div class="flex justify-end gap-2 pt-3">`;
+                    for (let a = 0; a < ansLen; a++) {
+                        ansHtml += `
+                            <input type="text" inputmode="numeric" maxlength="1"
+                                id="ans-${qIndex}-${a}"
+                                data-q="${qIndex}" data-col="${a}"
+                                data-expected="${q.answerStr[a]}"
+                                aria-label="Jawaban soal ${q.id} digit ${a + 1}"
+                                class="ans-box dashed-box w-11 h-12 py-2 rounded-xl text-center font-bold text-2xl text-indigo-950 bg-indigo-50/40">
+                        `;
+                    }
+                    ansHtml += `</div>`;
+
+                    innerMathHtml = `
+                        <div class="inline-block pl-8 pr-2">
+                            ${carryHtml}
+                            ${row1Html}
+                            ${row2Html}
+                            ${ansHtml}
+                        </div>
+                    `;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'neo-card bg-white/95 rounded-3xl p-5 relative transition-all';
+                card.id = `card-${qIndex}`;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-7 h-7 rounded-xl ${badgeColors[qIndex % badgeColors.length]} text-white font-bold text-sm flex items-center justify-center border-2 border-indigo-950">
+                                ${q.id}
+                            </span>
+                            <span class="font-bold text-base text-indigo-950">${q.num1} ${q.symbol} ${q.num2}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="status-${qIndex}" class="text-xs font-bold px-2.5 py-1 rounded-full hidden"></span>
+                            <button id="check-btn-${qIndex}" onclick="checkSingleQuestion(${qIndex})" class="neo-btn bg-teal-300 hover:bg-teal-400 text-indigo-950 text-xs font-bold px-3.5 py-1.5 rounded-xl">
+                                Periksa
+                            </button>
+                        </div>
+                    </div>
+
+                    ${q.storyText ? `<div class="bg-violet-50 border-2 border-violet-200 rounded-2xl p-3 mb-4 text-xs md:text-sm text-indigo-950 leading-relaxed">${q.storyText}</div>` : ''}
+
+                    <div class="flex justify-center my-2 overflow-x-auto py-1">
+                        ${innerMathHtml}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            setupInputNavigation();
+        }
+        function getFirstInputForQuestion(qIdx) {
+            const q = state.questions[qIdx];
+            if (!q) return null;
+            if (q.actualOp === 'bagi' && q.divisionData) {
+                return document.getElementById(`ans-${qIdx}-0`);
+            } else {
+                return document.getElementById(`ans-${qIdx}-${q.answerStr.length - 1}`);
+            }
+        }
+
+        function setupInputNavigation() {
+            const allAnsInputs = document.querySelectorAll('.ans-box');
+            const allCarryInputs = document.querySelectorAll('.carry-box');
+
+            [...allAnsInputs, ...allCarryInputs].forEach(inp => {
+                inp.addEventListener('focus', () => {
+                    state.lastFocusedInput = inp;
+                    const qIdx = inp.getAttribute('data-q');
+                    const hint = inp.getAttribute('data-hint');
+                    if (hint && qIdx !== null) {
+                        const hintEl = document.getElementById(`div-hint-${qIdx}`);
+                        if (hintEl) {
+                            hintEl.innerHTML = `💡 ${hint}`;
+                        }
+                    }
+                });
+            });
+
+            allCarryInputs.forEach(inp => {
+                inp.addEventListener('input', (e) => {
+                    const clean = e.target.value.replace(/[^0-9]/g, '');
+                    e.target.value = clean.slice(-1);
+                    if (e.target.value) playTone(660, 'sine', 0.06);
+                });
+            });
+
+            allAnsInputs.forEach(inp => {
+                inp.addEventListener('input', (e) => {
+                    const clean = e.target.value.replace(/[^0-9]/g, '');
+                    e.target.value = clean.slice(-1);
+
+                    inp.classList.remove('correct-box', 'wrong-box');
+
+                    if (e.target.value.length === 1) {
+                        playTone(580, 'sine', 0.07);
+                        const qIdx = parseInt(inp.getAttribute('data-q'));
+                        const colIdx = parseInt(inp.getAttribute('data-col'));
+                        const q = state.questions[qIdx];
+
+                        if (q.actualOp === 'bagi' && q.divisionData) {
+                            const totalBoxes = q.divisionData.flatInputs.length;
+                            if (colIdx < totalBoxes - 1) {
+                                const nextInput = document.getElementById(`ans-${qIdx}-${colIdx + 1}`);
+                                if (nextInput) nextInput.focus();
+                            } else {
+                                autoVerifyIfComplete(qIdx);
+                            }
+                        } else {
+                            // Pindah otomatis ke kotak sebelah kiri (colIdx - 1)
+                            if (colIdx > 0) {
+                                const prevInput = document.getElementById(`ans-${qIdx}-${colIdx - 1}`);
+                                if (prevInput) prevInput.focus();
+                            } else {
+                                autoVerifyIfComplete(qIdx);
+                            }
+                        }
+                    }
+                });
+
+                inp.addEventListener('keydown', (e) => {
+                    const qIdx = parseInt(inp.getAttribute('data-q'));
+                    const colIdx = parseInt(inp.getAttribute('data-col'));
+                    const q = state.questions[qIdx];
+                    const isDiv = q.actualOp === 'bagi' && q.divisionData;
+                    const maxLen = isDiv ? q.divisionData.flatInputs.length : q.answerStr.length;
+
+                    if (e.key === 'Backspace' && inp.value === '') {
+                        if (isDiv) {
+                            if (colIdx > 0) {
+                                const prevInput = document.getElementById(`ans-${qIdx}-${colIdx - 1}`);
+                                if (prevInput) {
+                                    prevInput.focus();
+                                    e.preventDefault();
+                                }
+                            }
+                        } else {
+                            if (colIdx < maxLen - 1) {
+                                const rightInput = document.getElementById(`ans-${qIdx}-${colIdx + 1}`);
+                                if (rightInput) {
+                                    rightInput.focus();
+                                    e.preventDefault();
+                                }
+                            }
+                        }
+                    } else if (e.key === 'ArrowLeft' && colIdx > 0) {
+                        document.getElementById(`ans-${qIdx}-${colIdx - 1}`)?.focus();
+                        e.preventDefault();
+                    } else if (e.key === 'ArrowRight' && colIdx < maxLen - 1) {
+                        document.getElementById(`ans-${qIdx}-${colIdx + 1}`)?.focus();
+                        e.preventDefault();
+                    } else if (e.key === 'Enter') {
+                        checkSingleQuestion(qIdx);
+                    }
+                });
+            });
+
+            // Fokuskan otomatis pada kotak pertama di soal nomor 1
+            if (state.questions.length > 0) {
+                const firstInput = getFirstInputForQuestion(0);
+                if (firstInput) {
+                    firstInput.focus();
+                    state.lastFocusedInput = firstInput;
+                }
+            }
+        }
+
+        // Fungsi untuk papan angka layar sentuh di bagian bawah
+        function inputFromNumpad(digit) {
+            if (!state.lastFocusedInput || state.lastFocusedInput.disabled) {
+                const nextQ = state.questions.findIndex(q => !q.solved);
+                if (nextQ !== -1) {
+                    state.lastFocusedInput = getFirstInputForQuestion(nextQ);
+                } else {
+                    return;
+                }
+            }
+            if (state.lastFocusedInput && !state.lastFocusedInput.disabled) {
+                state.lastFocusedInput.value = digit;
+                state.lastFocusedInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }
+
+        function clearCurrentInput() {
+            if (state.lastFocusedInput && !state.lastFocusedInput.disabled) {
+                state.lastFocusedInput.value = '';
+                state.lastFocusedInput.classList.remove('correct-box', 'wrong-box');
+                state.lastFocusedInput.focus();
+                playTone(300, 'sine', 0.06);
+            }
+        }
+
+        function autoVerifyIfComplete(qIdx) {
+            const q = state.questions[qIdx];
+            const totalBoxes = (q.actualOp === 'bagi' && q.divisionData)
+                ? q.divisionData.flatInputs.length
+                : q.answerStr.length;
+
+            let allFilled = true;
+            for (let i = 0; i < totalBoxes; i++) {
+                const el = document.getElementById(`ans-${qIdx}-${i}`);
+                if (!el || el.value.trim() === '') {
+                    allFilled = false;
+                    break;
+                }
+            }
+            if (allFilled) {
+                checkSingleQuestion(qIdx, true);
+            }
+        }
+
+        function checkSingleQuestion(qIdx, isAuto = false) {
+            const q = state.questions[qIdx];
+            if (q.solved) return true;
+
+            const totalBoxes = (q.actualOp === 'bagi' && q.divisionData)
+                ? q.divisionData.flatInputs.length
+                : q.answerStr.length;
+
+            const statusEl = document.getElementById(`status-${qIdx}`);
+            let allFilled = true;
+
+            for (let i = 0; i < totalBoxes; i++) {
+                const el = document.getElementById(`ans-${qIdx}-${i}`);
+                if (!el || el.value.trim() === '') {
+                    allFilled = false;
+                }
+            }
+
+            if (!allFilled && !isAuto) {
+                statusEl.textContent = '⚠️ Isi semua kotak dulu';
+                statusEl.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-400';
+                statusEl.classList.remove('hidden');
+                playTone(280, 'sawtooth', 0.15);
+                return false;
+            }
+
+            let isCorrect = true;
+            for (let i = 0; i < totalBoxes; i++) {
+                const el = document.getElementById(`ans-${qIdx}-${i}`);
+                const expected = el.getAttribute('data-expected');
+                el.classList.remove('correct-box', 'wrong-box');
+                if (el.value.trim() === expected) {
+                    el.classList.add('correct-box');
+                } else {
+                    el.classList.add('wrong-box');
+                    isCorrect = false;
+                }
+            }
+
+            if (isCorrect) {
+                q.solved = true;
+                const currentStats = getCurrentStats();
+                currentStats.score += 10;
+                currentStats.streak += 1;
+                updateScoreUI();
+
+                // Kunci semua kotak jawaban dan kotak simpanan pada soal yang sudah benar
+                for (let i = 0; i < totalBoxes; i++) {
+                    const el = document.getElementById(`ans-${qIdx}-${i}`);
+                    if (el) {
+                        el.disabled = true;
+                        el.classList.add('cursor-not-allowed');
+                    }
+                }
+                document.querySelectorAll(`.carry-box[data-q="${qIdx}"]`).forEach(el => {
+                    el.disabled = true;
+                    el.classList.add('cursor-not-allowed', 'opacity-70');
+                });
+
+                const checkBtn = document.getElementById(`check-btn-${qIdx}`);
+                if (checkBtn) checkBtn.classList.add('hidden');
+
+                statusEl.textContent = '✓ Benar! +10';
+                statusEl.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-400';
+                statusEl.classList.remove('hidden');
+                playTone(784, 'triangle', 0.18);
+
+                let nextQ = state.questions.findIndex((item, idx) => idx > qIdx && !item.solved);
+                if (nextQ === -1) {
+                    nextQ = state.questions.findIndex(item => !item.solved);
+                }
+
+                if (nextQ !== -1) {
+                    setTimeout(() => {
+                        const targetInput = getFirstInputForQuestion(nextQ);
+                        if (targetInput) {
+                            targetInput.focus();
+                            state.lastFocusedInput = targetInput;
+                        }
+                    }, 200);
+                } else {
+                    state.lastFocusedInput = null;
+                }
+                return true;
+            } else {
+                const currentStats = getCurrentStats();
+                currentStats.streak = 0;
+                updateScoreUI();
+                statusEl.textContent = '✗ Coba periksa lagi';
+                statusEl.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-400';
+                statusEl.classList.remove('hidden');
+                playTone(220, 'sawtooth', 0.2);
+                return false;
+            }
+        }
+
+        function checkAllAnswers() {
+            let correctCount = 0;
+            state.questions.forEach((_, idx) => {
+                if (checkSingleQuestion(idx)) {
+                    correctCount++;
+                }
+            });
+
+            const modal = document.getElementById('feedback-modal');
+            const emoji = document.getElementById('modal-emoji');
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+
+            if (correctCount === state.questions.length) {
+                emoji.textContent = '🏆';
+                title.textContent = 'Sempurna! Semua Benar!';
+                desc.textContent = `Kamu berhasil menyelesaikan ke-${state.questions.length} soal berhitung bersusun dengan tepat!`;
+            } else {
+                emoji.textContent = '💪';
+                title.textContent = `${correctCount} dari ${state.questions.length} Soal Benar`;
+                desc.textContent = 'Kotak yang berwarna merah masih kurang tepat. Yuk perbaiki yang merah atau lanjut ke soal baru!';
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeModal(loadNew) {
+            const modal = document.getElementById('feedback-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            if (loadNew) {
+                generateAllQuestions();
+            }
+        }
+
+        function updateScoreUI() {
+            const currentStats = getCurrentStats();
+            document.getElementById('score-badge').textContent = currentStats.score;
+            document.getElementById('streak-badge').textContent = currentStats.streak;
+
+            const opLabels = {
+                tambah: 'Tambah',
+                kurang: 'Kurang',
+                kali: 'Kali',
+                bagi: 'Bagi',
+                cerita: 'Soal Cerita'
+            };
+            const difLabels = {
+                mudah: 'Mudah',
+                sedang: 'Sedang',
+                sulit: 'Sulit'
+            };
+
+            const badgeEl = document.getElementById('category-level-badge');
+            if (badgeEl) {
+                badgeEl.textContent = `${opLabels[state.operation]} • ${difLabels[state.difficulty]}`;
+            }
+        }
+
+        window.onload = function() {
+            updateScoreUI();
+            generateAllQuestions();
+        };
+    </script>
+</body>
+</html>
