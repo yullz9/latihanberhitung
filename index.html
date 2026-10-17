@@ -45,6 +45,9 @@
         .dashed-box {
             border: 1.5px dashed #93c5fd;
             transition: all 0.15s ease;
+            caret-color: transparent;
+            cursor: pointer;
+            user-select: none;
         }
         .dashed-box:focus {
             border: 2px solid #3b82f6;
@@ -192,19 +195,19 @@
         <div class="max-w-xl mx-auto flex flex-col gap-1.5">
             <div class="flex justify-between items-center px-1">
                 <span class="text-[11px] font-semibold text-[#475569]">Papan Angka Cepat (Klik kotak lalu tekan angka):</span>
-                <button onclick="clearCurrentInput()" class="text-xs font-semibold text-[#e11d48] hover:underline">⌫ Hapus Kotak</button>
+                <button onmousedown="event.preventDefault()" onclick="clearCurrentInput()" class="text-xs font-semibold text-[#e11d48] hover:underline">⌫ Hapus Kotak</button>
             </div>
             <div class="grid grid-cols-10 gap-1">
-                <button onclick="inputFromNumpad('1')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">1</button>
-                <button onclick="inputFromNumpad('2')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">2</button>
-                <button onclick="inputFromNumpad('3')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">3</button>
-                <button onclick="inputFromNumpad('4')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">4</button>
-                <button onclick="inputFromNumpad('5')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">5</button>
-                <button onclick="inputFromNumpad('6')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">6</button>
-                <button onclick="inputFromNumpad('7')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">7</button>
-                <button onclick="inputFromNumpad('8')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">8</button>
-                <button onclick="inputFromNumpad('9')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">9</button>
-                <button onclick="inputFromNumpad('0')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">0</button>
+                <button onmousedown="event.preventDefault()" onclick="inputFromNumpad('1')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">1</button>
+                <button onmousedown="event.preventDefault()" onclick="inputFromNumpad('2')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">2</button>
+                <button onmousedown="event.preventDefault()" onclick="inputFromNumpad('3')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">3</button>
+                <button onmousedown="event.preventDefault()" onclick="inputFromNumpad('4')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">4</button>
+                <button onmousedown="event.preventDefault()" onclick="inputFromNumpad('5')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">5</button>
+                <button onmousedown="event.preventDefault()" onclick="inputFromNumpad('6')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">6</button>
+                <button onmousedown="event.preventDefault()" onclick="inputFromNumpad('7')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">7</button>
+                <button onmousedown="event.preventDefault()" onclick="inputFromNumpad('8')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">8</button>
+                <button onmousedown="event.preventDefault()" onclick="inputFromNumpad('9')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">9</button>
+                <button onmousedown="event.preventDefault()" onclick="inputFromNumpad('0')" class="neo-btn bg-[#f8fbff] hover:bg-[#eef6ff] text-[#1e3a8a] py-2 rounded-xl font-semibold text-base">0</button>
             </div>
         </div>
     </div>
@@ -594,7 +597,7 @@
                 return `
                     <div class="relative">
                         <span class="absolute -top-1.5 -left-1.5 w-4 h-4 rounded-full bg-[#3b82f6] text-white text-[9px] font-semibold flex items-center justify-center z-10 pointer-events-none">${stepBadge}</span>
-                        <input type="text" inputmode="numeric" maxlength="1"
+                        <input type="text" inputmode="none" maxlength="1" autocomplete="off"
                             id="ans-${qIndex}-${info.seqIdx}"
                             data-q="${qIndex}" data-col="${info.seqIdx}"
                             data-expected="${info.expected}"
@@ -744,7 +747,7 @@
                             if (c < maxCols - 1) {
                                 carryHtml += `
                                     <div class="w-11 flex justify-center">
-                                        <input type="text" inputmode="numeric" maxlength="1"
+                                        <input type="text" inputmode="none" maxlength="1" autocomplete="off"
                                             data-q="${qIndex}" data-carry="${c}"
                                             aria-label="Simpanan kolom ${c + 1}"
                                             class="carry-box dashed-box w-11 h-9 rounded-xl text-center font-semibold text-sm text-[#2563eb] bg-[#f8fbff]">
@@ -773,7 +776,7 @@
                     let ansHtml = `<div class="flex justify-end gap-2 pt-3">`;
                     for (let a = 0; a < ansLen; a++) {
                         ansHtml += `
-                            <input type="text" inputmode="numeric" maxlength="1"
+                            <input type="text" inputmode="none" maxlength="1" autocomplete="off"
                                 id="ans-${qIndex}-${a}"
                                 data-q="${qIndex}" data-col="${a}"
                                 data-expected="${q.answerStr[a]}"
