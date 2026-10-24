@@ -167,6 +167,22 @@
             </label>
         </div>
 
+        <!-- Sub-Level Khusus Juara (Tingkat 1, 2, 3) -->
+        <div id="juara-tier-wrapper" class="hidden grid-cols-3 gap-2 bg-white/80 border border-blue-100 rounded-2xl p-2">
+            <button onclick="setJuaraTier(1)" id="tier-1" class="tier-btn neo-btn neo-btn-active bg-white rounded-xl py-1.5 px-2 text-center text-[#334155]">
+                <div class="text-xs font-semibold">⭐ Tingkat 1</div>
+                <div class="text-[10px] opacity-75">Juara Dasar</div>
+            </button>
+            <button onclick="setJuaraTier(2)" id="tier-2" class="tier-btn neo-btn bg-white rounded-xl py-1.5 px-2 text-center text-[#334155]">
+                <div class="text-xs font-semibold">⭐⭐ Tingkat 2</div>
+                <div class="text-[10px] opacity-75">Juara Lanjut</div>
+            </button>
+            <button onclick="setJuaraTier(3)" id="tier-3" class="tier-btn neo-btn bg-white rounded-xl py-1.5 px-2 text-center text-[#334155]">
+                <div class="text-xs font-semibold">⭐⭐⭐ Tingkat 3</div>
+                <div class="text-[10px] opacity-75">Juara Master</div>
+            </button>
+        </div>
+
         <!-- Accordion Cara Menghitung -->
         <div class="neo-card bg-[#eef6ff] border-[#bfdbfe] text-[#1e3a8a] rounded-2xl overflow-hidden">
             <button onclick="toggleGuide()" class="w-full px-4 py-2.5 text-left font-semibold flex justify-between items-center text-sm text-[#1d4ed8]">
@@ -227,7 +243,7 @@
 
     <script>
         const OPERATIONS = ['tambah', 'kurang', 'kali', 'bagi', 'cerita'];
-        const DIFFICULTIES = ['mudah', 'sedang', 'sulit'];
+        const DIFFICULTIES = ['mudah', 'sedang', 'sulit_1', 'sulit_2', 'sulit_3'];
 
         function createInitialStats() {
             const stats = {};
@@ -243,6 +259,7 @@
         let state = {
             operation: 'tambah',
             difficulty: 'mudah',
+            juaraTier: 1,
             showCarry: true,
             stats: createInitialStats(),
             soundEnabled: true,
@@ -250,8 +267,12 @@
             lastFocusedInput: null
         };
 
+        function getStatKey() {
+            return state.difficulty === 'sulit' ? `sulit_${state.juaraTier}` : state.difficulty;
+        }
+
         function getCurrentStats() {
-            return state.stats[state.operation][state.difficulty];
+            return state.stats[state.operation][getStatKey()];
         }
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -319,9 +340,9 @@
                     '3. <b>Kurang & Turunkan:</b> Kurangkan kedua angka tersebut, turunkan angka di sebelahnya, lalu ulangi langkah sampai sisa akhirnya <b>0</b>!'
                 ],
                 cerita: [
-                    '1. Baca cerita dengan teliti untuk menentukan operasi hitung yang tepat.',
-                    '2. Kotak simpanan di atas hanya muncul untuk soal <b>penjumlahan</b> dan <b>perkalian</b>.',
-                    '3. Untuk soal pembagian, gunakan metode pembagian bersusun ke bawah (porogapit).'
+                    '1. Baca cerita dengan teliti, lalu <b>tekan tombol operasi hitung</b> (Tambah, Kurang, Kali, atau Bagi) yang tepat.',
+                    '2. Jika pilihan operasimu benar, langkah kerja bersusun akan muncul untuk kamu isi.',
+                    '3. Kotak simpanan hanya muncul pada penjumlahan & perkalian, sedangkan pembagian menggunakan porogapit.'
                 ]
             };
 
@@ -347,6 +368,25 @@
             playTone(520, 'triangle', 0.08);
             document.querySelectorAll('.dif-btn').forEach(btn => btn.classList.remove('neo-btn-active'));
             document.getElementById(`dif-${dif}`).classList.add('neo-btn-active');
+
+            const tierWrapper = document.getElementById('juara-tier-wrapper');
+            if (dif === 'sulit') {
+                tierWrapper.classList.remove('hidden');
+                tierWrapper.classList.add('grid');
+            } else {
+                tierWrapper.classList.add('hidden');
+                tierWrapper.classList.remove('grid');
+            }
+
+            updateScoreUI();
+            generateAllQuestions();
+        }
+
+        function setJuaraTier(tier) {
+            state.juaraTier = tier;
+            playTone(560, 'triangle', 0.08);
+            document.querySelectorAll('.tier-btn').forEach(btn => btn.classList.remove('neo-btn-active'));
+            document.getElementById(`tier-${tier}`).classList.add('neo-btn-active');
             updateScoreUI();
             generateAllQuestions();
         }
@@ -354,7 +394,15 @@
         function toggleCarry() {
             state.showCarry = document.getElementById('toggle-carry').checked;
             playTone(600, 'sine', 0.06);
-            renderQuestions();
+            document.querySelectorAll('.carry-row-container').forEach(row => {
+                if (state.showCarry) {
+                    row.classList.remove('hidden');
+                    row.classList.add('flex');
+                } else {
+                    row.classList.add('hidden');
+                    row.classList.remove('flex');
+                }
+            });
         }
 
         function toggleGuide() {
@@ -485,10 +533,114 @@
             };
         }
 
+        function generateMultiBorrowSubtraction(tier) {
+            if (tier === 1) {
+                // 3 digit - 3 digit dengan 2 kolom meminjam (satuan & puluhan)
+                const d1 = Math.floor(Math.random() * 5) + 4; // 4..8
+                const d2 = Math.floor(Math.random() * 4) + 1; // 1..4
+                const d3 = Math.floor(Math.random() * 4) + 1; // 1..4
+
+                const b1 = Math.floor(Math.random() * (d1 - 2)) + 1;
+                const b2 = Math.floor(Math.random() * (8 - d2)) + d2 + 1; // > d2
+                const b3 = Math.floor(Math.random() * (9 - d3)) + d3 + 1; // > d3
+
+                return [d1 * 100 + d2 * 10 + d3, b1 * 100 + b2 * 10 + b3];
+            } else if (tier === 2) {
+                // 4 digit - 4 digit dengan 3 kolom meminjam beruntun
+                const d1 = Math.floor(Math.random() * 5) + 4; // 4..8
+                const d2 = Math.floor(Math.random() * 4) + 1; // 1..4
+                const d3 = Math.floor(Math.random() * 4) + 1; // 1..4
+                const d4 = Math.floor(Math.random() * 4) + 1; // 1..4
+
+                const b1 = Math.floor(Math.random() * (d1 - 2)) + 1;
+                const b2 = Math.floor(Math.random() * (8 - d2)) + d2 + 1;
+                const b3 = Math.floor(Math.random() * (8 - d3)) + d3 + 1;
+                const b4 = Math.floor(Math.random() * (9 - d4)) + d4 + 1;
+
+                return [d1 * 1000 + d2 * 100 + d3 * 10 + d4, b1 * 1000 + b2 * 100 + b3 * 10 + b4];
+            } else {
+                // Tingkat 3: 4 digit dengan angka 0 di tengah sehingga meminjam beruntun melewati 0
+                const d1 = Math.floor(Math.random() * 5) + 5; // 5..9
+                const d2 = 0;
+                const d3 = Math.floor(Math.random() * 3); // 0..2
+                const d4 = Math.floor(Math.random() * 4) + 1; // 1..4
+
+                const b1 = Math.floor(Math.random() * (d1 - 3)) + 1;
+                const b2 = Math.floor(Math.random() * 6) + 3; // 3..8
+                const b3 = Math.floor(Math.random() * 5) + 4; // 4..8
+                const b4 = Math.floor(Math.random() * (9 - d4)) + d4 + 1;
+
+                return [d1 * 1000 + d2 * 100 + d3 * 10 + d4, b1 * 1000 + b2 * 100 + b3 * 10 + b4];
+            }
+        }
+
+        function buildMultiDigitKaliData(num1, num2) {
+            const answer = num1 * num2;
+            const n2Digits = num2.toString().split('').map(Number).reverse(); // satuan, puluhan, ratusan
+            const partialRows = [];
+            const flatInputs = [];
+
+            const totalCols = Math.max(
+                num1.toString().length,
+                num2.toString().length,
+                answer.toString().length
+            );
+
+            n2Digits.forEach((digit, stepIdx) => {
+                const prodVal = num1 * digit;
+                const prodStr = prodVal === 0
+                    ? '0'.repeat(num1.toString().length)
+                    : prodVal.toString();
+                // Kolom paling kanan dari baris ini bergeser ke kiri sebanyak stepIdx
+                const endCol = totalCols - 1 - stepIdx;
+                const startCol = endCol - prodStr.length + 1;
+
+                partialRows.push({
+                    stepIdx,
+                    digit,
+                    prodVal,
+                    prodStr,
+                    startCol,
+                    endCol
+                });
+
+                // Urutan ketik dari kanan ke kiri pada setiap baris hasil kali
+                for (let c = prodStr.length - 1; c >= 0; c--) {
+                    const gridCol = startCol + c;
+                    flatInputs.push({
+                        id: `mk-p-${stepIdx}-${gridCol}`,
+                        expected: prodStr[c],
+                        hint: `Langkah ${stepIdx + 1}: Kalikan <b>${num1} × ${digit} = ${prodVal}</b> (isi dari kanan ke kiri)`
+                    });
+                }
+            });
+
+            const ansStr = answer.toString();
+            const ansStartCol = totalCols - ansStr.length;
+            for (let c = ansStr.length - 1; c >= 0; c--) {
+                const gridCol = ansStartCol + c;
+                flatInputs.push({
+                    id: `mk-ans-${gridCol}`,
+                    expected: ansStr[c],
+                    hint: `Langkah Akhir: Jumlahkan seluruh baris hasil kali di atas dari <b>kanan ke kiri</b>`
+                });
+            }
+
+            return {
+                num1,
+                num2,
+                answer,
+                totalCols,
+                partialRows,
+                flatInputs
+            };
+        }
+
         function createSingleQuestion(index) {
-            let num1, num2, op = state.operation;
+            let num1, num2, num3 = null, op = state.operation;
             let storyText = null;
             let divisionData = null;
+            let multiKaliData = null;
 
             let actualOp = op;
             if (op === 'cerita') {
@@ -503,14 +655,32 @@
                 num1 = Math.floor(Math.random() * 350) + 65;
                 num2 = Math.floor(Math.random() * 250) + 45;
             } else {
-                num1 = Math.floor(Math.random() * 2500) + 350;
-                num2 = Math.floor(Math.random() * 1500) + 250;
+                // Level Juara (Tingkat 1, 2, 3) untuk Tambah (3 susun)
+                if (state.juaraTier === 1) {
+                    num1 = Math.floor(Math.random() * 180) + 45;
+                    num2 = Math.floor(Math.random() * 180) + 35;
+                    num3 = Math.floor(Math.random() * 150) + 25;
+                } else if (state.juaraTier === 2) {
+                    num1 = Math.floor(Math.random() * 650) + 150;
+                    num2 = Math.floor(Math.random() * 650) + 140;
+                    num3 = Math.floor(Math.random() * 550) + 120;
+                } else {
+                    num1 = Math.floor(Math.random() * 2800) + 1100;
+                    num2 = Math.floor(Math.random() * 2500) + 950;
+                    num3 = Math.floor(Math.random() * 2200) + 850;
+                }
             }
 
             if (actualOp === 'kurang') {
-                if (num1 < num2) [num1, num2] = [num2, num1];
-                if (num1 === num2) num1 += 15;
+                num3 = null;
+                if (state.difficulty === 'sulit') {
+                    [num1, num2] = generateMultiBorrowSubtraction(state.juaraTier);
+                } else {
+                    if (num1 < num2) [num1, num2] = [num2, num1];
+                    if (num1 === num2) num1 += 15;
+                }
             } else if (actualOp === 'kali') {
+                num3 = null;
                 if (state.difficulty === 'mudah') {
                     num1 = Math.floor(Math.random() * 35) + 12;
                     num2 = Math.floor(Math.random() * 7) + 2;
@@ -518,10 +688,24 @@
                     num1 = Math.floor(Math.random() * 120) + 25;
                     num2 = Math.floor(Math.random() * 8) + 2;
                 } else {
-                    num1 = Math.floor(Math.random() * 350) + 110;
-                    num2 = Math.floor(Math.random() * 8) + 2;
+                    // Level Juara: Perkalian dengan puluhan & ratusan
+                    if (state.juaraTier === 1) {
+                        // Puluhan x Puluhan
+                        num1 = Math.floor(Math.random() * 65) + 14;
+                        num2 = Math.floor(Math.random() * 24) + 12;
+                    } else if (state.juaraTier === 2) {
+                        // Ratusan x Puluhan
+                        num1 = Math.floor(Math.random() * 320) + 115;
+                        num2 = Math.floor(Math.random() * 35) + 12;
+                    } else {
+                        // Ratusan x Ratusan
+                        num1 = Math.floor(Math.random() * 240) + 112;
+                        num2 = Math.floor(Math.random() * 130) + 112;
+                    }
+                    multiKaliData = buildMultiDigitKaliData(num1, num2);
                 }
             } else if (actualOp === 'bagi') {
+                num3 = null;
                 let divisor, quotient;
                 if (state.difficulty === 'mudah') {
                     divisor = Math.floor(Math.random() * 6) + 2;
@@ -534,11 +718,24 @@
                     const q2 = Math.floor(Math.random() * 8) + 1;
                     quotient = q1 * 10 + q2;
                 } else {
-                    divisor = Math.floor(Math.random() * 7) + 3;
-                    const q1 = Math.floor(Math.random() * 3) + 1;
-                    const q2 = Math.floor(Math.random() * 8) + 1;
-                    const q3 = Math.floor(Math.random() * 8) + 1;
-                    quotient = q1 * 100 + q2 * 10 + q3;
+                    // Level Juara: Pembagian puluhan (pembagi 2 digit)
+                    if (state.juaraTier === 1) {
+                        divisor = Math.floor(Math.random() * 8) + 11; // 11..18
+                        const q1 = Math.floor(Math.random() * 3) + 1;
+                        const q2 = Math.floor(Math.random() * 8) + 1;
+                        quotient = q1 * 10 + q2;
+                    } else if (state.juaraTier === 2) {
+                        divisor = Math.floor(Math.random() * 22) + 16; // 16..37
+                        const q1 = Math.floor(Math.random() * 5) + 2;
+                        const q2 = Math.floor(Math.random() * 8) + 1;
+                        quotient = q1 * 10 + q2;
+                    } else {
+                        divisor = Math.floor(Math.random() * 30) + 21; // 21..50
+                        const q1 = Math.floor(Math.random() * 3) + 1;
+                        const q2 = Math.floor(Math.random() * 8) + 1;
+                        const q3 = Math.floor(Math.random() * 8) + 1;
+                        quotient = q1 * 100 + q2 * 10 + q3;
+                    }
                 }
                 divisionData = buildDivisionData(divisor, quotient);
                 num1 = divisionData.num1;
@@ -547,7 +744,7 @@
 
             let answer = 0;
             let symbol = '+';
-            if (actualOp === 'tambah') { answer = num1 + num2; symbol = '+'; }
+            if (actualOp === 'tambah') { answer = num1 + num2 + (num3 || 0); symbol = '+'; }
             if (actualOp === 'kurang') { answer = num1 - num2; symbol = '-'; }
             if (actualOp === 'kali')   { answer = num1 * num2; symbol = '×'; }
             if (actualOp === 'bagi')   { answer = divisionData.answer; symbol = ':'; }
@@ -559,13 +756,17 @@
                 const item = items[(index + 1) % items.length];
 
                 if (actualOp === 'tambah') {
-                    storyText = `${name} memiliki <b>${num1}</b> ${item}, lalu diberi lagi oleh Ibu sebanyak <b>${num2}</b> ${item}. Berapa jumlah ${item} ${name} sekarang?`;
+                    if (num3 !== null) {
+                        storyText = `${name} memiliki <b>${num1}</b> ${item}, lalu diberi Ibu <b>${num2}</b> ${item}, dan diberi Ayah lagi <b>${num3}</b> ${item}. Berapa jumlah seluruh ${item} ${name} sekarang?`;
+                    } else {
+                        storyText = `${name} memiliki <b>${num1}</b> ${item}, lalu diberi lagi oleh Ibu sebanyak <b>${num2}</b> ${item}. Berapa jumlah ${item} ${name} sekarang?`;
+                    }
                 } else if (actualOp === 'kurang') {
-                    storyText = `${name} mempunyai <b>${num1}</b> ${item}. Sebanyak <b>${num2}</b> ${item} diberikan kepada adiknya. Berapa sisa ${item} ${name}?`;
+                    storyText = `Sebuah toko memiliki persediaan <b>${num1}</b> ${item}. Hari ini terjual sebanyak <b>${num2}</b> ${item}. Berapa sisa ${item} yang belum terjual?`;
                 } else if (actualOp === 'kali') {
-                    storyText = `Ada <b>${num2}</b> kotak di meja. Setiap kotak berisi <b>${num1}</b> ${item}. Berapa total seluruh ${item}?`;
+                    storyText = `Ada <b>${num2}</b> kotak besar di perpustakaan. Setiap kotak berisi <b>${num1}</b> ${item}. Berapa total seluruh ${item}?`;
                 } else {
-                    storyText = `${name} memiliki <b>${num1}</b> ${item} yang akan dibagikan sama rata ke dalam <b>${num2}</b> wadah. Berapa isi ${item} di setiap wadah?`;
+                    storyText = `Sebanyak <b>${num1}</b> ${item} akan dikemas sama rata ke dalam <b>${num2}</b> kardus. Berapa isi ${item} di setiap kardus?`;
                 }
             }
 
@@ -573,13 +774,115 @@
                 id: index + 1,
                 num1,
                 num2,
+                num3,
                 actualOp,
                 symbol,
                 answerStr: answer.toString(),
                 divisionData,
+                multiKaliData,
                 storyText,
+                opGuessed: op !== 'cerita',
                 solved: false
             };
+        }
+
+        function renderMultiKaliLayout(q, qIndex) {
+            const mk = q.multiKaliData;
+            const totalCols = mk.totalCols;
+
+            let seqMap = {};
+            mk.flatInputs.forEach((item, seqIdx) => {
+                seqMap[item.id] = { seqIdx, expected: item.expected, hint: item.hint };
+            });
+
+            const makeBox = (id, isFinal = false) => {
+                const info = seqMap[id];
+                return `
+                    <input type="text" inputmode="none" maxlength="1" autocomplete="off"
+                        id="ans-${qIndex}-${info.seqIdx}"
+                        data-q="${qIndex}" data-col="${info.seqIdx}"
+                        data-expected="${info.expected}"
+                        data-hint="${info.hint.replace(/"/g, '&quot;')}"
+                        class="ans-box dashed-box w-11 ${isFinal ? 'h-12 text-2xl bg-[#ecfdf5]/60' : 'h-10 text-xl bg-[#f8fbff]'} rounded-xl text-center font-bold text-[#1e3a8a]">
+                `;
+            };
+
+            const n1Chars = mk.num1.toString().padStart(totalCols, ' ').split('');
+            const n2Chars = mk.num2.toString().padStart(totalCols, ' ').split('');
+
+            let html = `<div class="flex flex-col items-center w-full">`;
+            const firstHint = mk.flatInputs[0] ? mk.flatInputs[0].hint : '';
+            html += `
+                <div id="div-hint-${qIndex}" class="w-full mb-3 px-3 py-2 rounded-xl bg-[#f0f7ff] border border-[#dbeafe] text-xs text-[#1e40af] text-center">
+                    💡 ${firstHint}
+                </div>
+            `;
+
+            html += `<div class="inline-block pl-8 pr-2">`;
+
+            html += `<div class="carry-row-container ${state.showCarry ? 'flex' : 'hidden'} justify-end gap-2 mb-1.5">`;
+            for (let c = 0; c < totalCols; c++) {
+                if (c < totalCols - 1) {
+                    html += `
+                        <div class="w-11 flex justify-center">
+                            <input type="text" inputmode="none" maxlength="1" autocomplete="off"
+                                data-q="${qIndex}" data-carry="${c}"
+                                class="carry-box dashed-box w-11 h-9 rounded-xl text-center font-semibold text-sm text-[#2563eb] bg-[#f8fbff]">
+                        </div>
+                    `;
+                } else {
+                    html += `<div class="w-11 h-9"></div>`;
+                }
+            }
+            html += `</div>`;
+
+            html += `<div class="flex justify-end gap-2 mb-1">`;
+            n1Chars.forEach(ch => {
+                html += `<div class="w-11 h-10 flex items-center justify-center font-bold text-2xl text-[#334155]">${ch === ' ' ? '' : ch}</div>`;
+            });
+            html += `</div>`;
+
+            html += `<div class="flex justify-end items-center gap-2 pb-2 border-b-[2.5px] border-[#93c5fd] relative">`;
+            html += `<span class="absolute left-0 font-bold text-2xl text-[#3b82f6] -translate-x-6">×</span>`;
+            n2Chars.forEach(ch => {
+                html += `<div class="w-11 h-10 flex items-center justify-center font-bold text-2xl text-[#334155]">${ch === ' ' ? '' : ch}</div>`;
+            });
+            html += `</div>`;
+
+            // Baris-baris hasil kali bertingkat
+            mk.partialRows.forEach((row, rIdx) => {
+                const isLastPartial = (rIdx === mk.partialRows.length - 1);
+                html += `<div class="flex justify-end items-center gap-2 mt-2 ${isLastPartial ? 'pb-2.5 border-b-[2.5px] border-[#93c5fd] relative' : ''}">`;
+                if (isLastPartial) {
+                    html += `<span class="absolute left-0 font-bold text-2xl text-[#3b82f6] -translate-x-6">+</span>`;
+                }
+                for (let c = 0; c < totalCols; c++) {
+                    if (c >= row.startCol && c <= row.endCol) {
+                        html += makeBox(`mk-p-${row.stepIdx}-${c}`, false);
+                    } else if (c > row.endCol) {
+                        html += `<div class="w-11 h-10 flex items-center justify-center font-bold text-lg text-slate-300 select-none">·</div>`;
+                    } else {
+                        html += `<div class="w-11 h-10"></div>`;
+                    }
+                }
+                html += `</div>`;
+            });
+
+            // Baris jumlah akhir
+            const ansLen = mk.answer.toString().length;
+            const ansStartCol = totalCols - ansLen;
+            html += `<div class="flex justify-end gap-2 pt-2.5">`;
+            for (let c = 0; c < totalCols; c++) {
+                if (c >= ansStartCol) {
+                    html += makeBox(`mk-ans-${c}`, true);
+                } else {
+                    html += `<div class="w-11 h-12"></div>`;
+                }
+            }
+            html += `</div>`;
+
+            html += `</div></div>`;
+            return html;
         }
 
         function renderDivisionLayout(q, qIndex) {
@@ -732,17 +1035,25 @@
 
                 if (q.actualOp === 'bagi' && q.divisionData) {
                     innerMathHtml = renderDivisionLayout(q, qIndex);
+                } else if (q.actualOp === 'kali' && q.multiKaliData) {
+                    innerMathHtml = renderMultiKaliLayout(q, qIndex);
                 } else {
-                    const maxCols = Math.max(q.num1.toString().length, q.num2.toString().length, q.answerStr.length);
+                    const maxCols = Math.max(
+                        q.num1.toString().length,
+                        q.num2.toString().length,
+                        q.num3 ? q.num3.toString().length : 0,
+                        q.answerStr.length
+                    );
                     const n1Chars = q.num1.toString().padStart(maxCols, ' ').split('');
                     const n2Chars = q.num2.toString().padStart(maxCols, ' ').split('');
+                    const n3Chars = q.num3 ? q.num3.toString().padStart(maxCols, ' ').split('') : null;
                     const ansLen = q.answerStr.length;
 
                     // Kotak simpanan di atas HANYA untuk Penjumlahan dan Perkalian
-                    const needsCarryBox = state.showCarry && (q.actualOp === 'tambah' || q.actualOp === 'kali');
+                    const canHaveCarryBox = (q.actualOp === 'tambah' || q.actualOp === 'kali');
                     let carryHtml = '';
-                    if (needsCarryBox) {
-                        carryHtml = `<div class="flex justify-end gap-2 mb-1.5">`;
+                    if (canHaveCarryBox) {
+                        carryHtml = `<div class="carry-row-container ${state.showCarry ? 'flex' : 'hidden'} justify-end gap-2 mb-1.5">`;
                         for (let c = 0; c < maxCols; c++) {
                             if (c < maxCols - 1) {
                                 carryHtml += `
@@ -766,12 +1077,29 @@
                     });
                     row1Html += `</div>`;
 
-                    let row2Html = `<div class="flex justify-end items-center gap-2 pb-2 border-b-[2.5px] border-[#93c5fd] relative">`;
-                    row2Html += `<span class="absolute left-0 font-bold text-2xl text-[#3b82f6] -translate-x-6">${q.symbol}</span>`;
-                    n2Chars.forEach(ch => {
-                        row2Html += `<div class="w-11 h-10 flex items-center justify-center font-bold text-2xl text-[#334155]">${ch === ' ' ? '' : ch}</div>`;
-                    });
-                    row2Html += `</div>`;
+                    let row2Html = '';
+                    let row3Html = '';
+                    if (n3Chars) {
+                        row2Html = `<div class="flex justify-end gap-2 mb-1">`;
+                        n2Chars.forEach(ch => {
+                            row2Html += `<div class="w-11 h-10 flex items-center justify-center font-bold text-2xl text-[#334155]">${ch === ' ' ? '' : ch}</div>`;
+                        });
+                        row2Html += `</div>`;
+
+                        row3Html = `<div class="flex justify-end items-center gap-2 pb-2 border-b-[2.5px] border-[#93c5fd] relative">`;
+                        row3Html += `<span class="absolute left-0 font-bold text-2xl text-[#3b82f6] -translate-x-6">${q.symbol}</span>`;
+                        n3Chars.forEach(ch => {
+                            row3Html += `<div class="w-11 h-10 flex items-center justify-center font-bold text-2xl text-[#334155]">${ch === ' ' ? '' : ch}</div>`;
+                        });
+                        row3Html += `</div>`;
+                    } else {
+                        row2Html = `<div class="flex justify-end items-center gap-2 pb-2 border-b-[2.5px] border-[#93c5fd] relative">`;
+                        row2Html += `<span class="absolute left-0 font-bold text-2xl text-[#3b82f6] -translate-x-6">${q.symbol}</span>`;
+                        n2Chars.forEach(ch => {
+                            row2Html += `<div class="w-11 h-10 flex items-center justify-center font-bold text-2xl text-[#334155]">${ch === ' ' ? '' : ch}</div>`;
+                        });
+                        row2Html += `</div>`;
+                    }
 
                     let ansHtml = `<div class="flex justify-end gap-2 pt-3">`;
                     for (let a = 0; a < ansLen; a++) {
@@ -791,6 +1119,7 @@
                             ${carryHtml}
                             ${row1Html}
                             ${row2Html}
+                            ${row3Html}
                             ${ansHtml}
                         </div>
                     `;
@@ -800,25 +1129,57 @@
                 card.className = 'neo-card bg-white rounded-3xl p-5 relative transition-all';
                 card.id = `card-${qIndex}`;
 
+                const headerExpr = q.num3 ? `${q.num1} ${q.symbol} ${q.num2} ${q.symbol} ${q.num3}` : `${q.num1} ${q.symbol} ${q.num2}`;
+                const displayHeader = q.opGuessed ? headerExpr : 'Soal Cerita • Pilih Operasi';
+
+                const storyPickerHtml = q.storyText ? `
+                    <div id="story-op-picker-${qIndex}" class="${q.opGuessed ? 'hidden' : 'flex'} flex-col items-center bg-[#f0f7ff] border border-[#dbeafe] rounded-2xl p-4 my-2 gap-3">
+                        <p class="text-xs md:text-sm font-semibold text-[#1e3a8a] text-center">
+                            🤔 Operasi hitung apa yang tepat untuk menyelesaikan cerita di atas?
+                        </p>
+                        <div class="grid grid-cols-4 gap-2 w-full max-w-sm">
+                            <button onclick="guessStoryOperation(${qIndex}, 'tambah', this)" class="neo-btn bg-white hover:bg-blue-50 rounded-xl p-2 flex flex-col items-center gap-1">
+                                <span class="w-7 h-7 rounded-lg bg-[#dbeafe] text-[#1d4ed8] flex items-center justify-center font-bold text-lg">+</span>
+                                <span class="text-xs font-semibold text-[#334155]">Tambah</span>
+                            </button>
+                            <button onclick="guessStoryOperation(${qIndex}, 'kurang', this)" class="neo-btn bg-white hover:bg-rose-50 rounded-xl p-2 flex flex-col items-center gap-1">
+                                <span class="w-7 h-7 rounded-lg bg-[#ffe4e6] text-[#e11d48] flex items-center justify-center font-bold text-lg">−</span>
+                                <span class="text-xs font-semibold text-[#334155]">Kurang</span>
+                            </button>
+                            <button onclick="guessStoryOperation(${qIndex}, 'kali', this)" class="neo-btn bg-white hover:bg-emerald-50 rounded-xl p-2 flex flex-col items-center gap-1">
+                                <span class="w-7 h-7 rounded-lg bg-[#d1fae5] text-[#059669] flex items-center justify-center font-bold text-lg">×</span>
+                                <span class="text-xs font-semibold text-[#334155]">Kali</span>
+                            </button>
+                            <button onclick="guessStoryOperation(${qIndex}, 'bagi', this)" class="neo-btn bg-white hover:bg-sky-50 rounded-xl p-2 flex flex-col items-center gap-1">
+                                <span class="w-7 h-7 rounded-lg bg-[#e0f2fe] text-[#0284c7] flex items-center justify-center font-bold text-lg">:</span>
+                                <span class="text-xs font-semibold text-[#334155]">Bagi</span>
+                            </button>
+                        </div>
+                        <p id="story-op-feedback-${qIndex}" class="text-xs font-semibold hidden"></p>
+                    </div>
+                ` : '';
+
                 card.innerHTML = `
                     <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-blue-50">
                         <div class="flex items-center gap-2.5">
                             <span class="w-7 h-7 rounded-lg ${badgeStyles[qIndex % badgeStyles.length]} font-bold text-sm flex items-center justify-center border">
                                 ${q.id}
                             </span>
-                            <span class="font-bold text-base text-[#1e3a8a]">${q.num1} ${q.symbol} ${q.num2}</span>
+                            <span id="header-expr-${qIndex}" class="font-bold text-base text-[#1e3a8a]">${displayHeader}</span>
                         </div>
                         <div class="flex items-center gap-2">
                             <span id="status-${qIndex}" class="text-xs font-semibold px-2.5 py-1 rounded-full hidden"></span>
-                            <button id="check-btn-${qIndex}" onclick="checkSingleQuestion(${qIndex})" class="neo-btn bg-[#f0f7ff] hover:bg-[#e0effe] text-[#1d4ed8] border-[#bfdbfe] text-xs font-semibold px-3.5 py-1.5 rounded-xl">
+                            <button id="check-btn-${qIndex}" onclick="checkSingleQuestion(${qIndex})" class="${q.opGuessed ? '' : 'hidden'} neo-btn bg-[#f0f7ff] hover:bg-[#e0effe] text-[#1d4ed8] border-[#bfdbfe] text-xs font-semibold px-3.5 py-1.5 rounded-xl">
                                 Periksa
                             </button>
                         </div>
                     </div>
 
-                    ${q.storyText ? `<div class="bg-[#f8fbff] border border-[#dbeafe] rounded-2xl p-3 mb-4 text-xs md:text-sm text-[#334155] leading-relaxed">${q.storyText}</div>` : ''}
+                    ${q.storyText ? `<div class="bg-[#f8fbff] border border-[#dbeafe] rounded-2xl p-3 mb-3 text-xs md:text-sm text-[#334155] leading-relaxed">${q.storyText}</div>` : ''}
 
-                    <div class="flex justify-center my-2 overflow-x-auto py-1">
+                    ${storyPickerHtml}
+
+                    <div id="math-work-${qIndex}" class="${q.opGuessed ? 'flex' : 'hidden'} justify-center my-2 overflow-x-auto py-1">
                         ${innerMathHtml}
                     </div>
                 `;
@@ -829,14 +1190,121 @@
             setupInputNavigation();
         }
 
+        function guessStoryOperation(qIdx, chosenOp, btnEl) {
+            const q = state.questions[qIdx];
+            if (!q || q.opGuessed) return;
+
+            const feedbackEl = document.getElementById(`story-op-feedback-${qIdx}`);
+            const statusEl = document.getElementById(`status-${qIdx}`);
+
+            if (chosenOp === q.actualOp) {
+                q.opGuessed = true;
+                playTone(680, 'triangle', 0.14);
+
+                const pickerEl = document.getElementById(`story-op-picker-${qIdx}`);
+                if (pickerEl) {
+                    pickerEl.classList.add('hidden');
+                    pickerEl.classList.remove('flex');
+                }
+
+                const mathWorkEl = document.getElementById(`math-work-${qIdx}`);
+                if (mathWorkEl) {
+                    mathWorkEl.classList.remove('hidden');
+                    mathWorkEl.classList.add('flex');
+                }
+
+                const headerExpr = q.num3 ? `${q.num1} ${q.symbol} ${q.num2} ${q.symbol} ${q.num3}` : `${q.num1} ${q.symbol} ${q.num2}`;
+                const headerEl = document.getElementById(`header-expr-${qIdx}`);
+                if (headerEl) headerEl.textContent = headerExpr;
+
+                const checkBtn = document.getElementById(`check-btn-${qIdx}`);
+                if (checkBtn) checkBtn.classList.remove('hidden');
+
+                if (statusEl) {
+                    statusEl.textContent = '✓ Operasi Tepat! Yuk hitung';
+                    statusEl.className = 'text-xs font-semibold px-2.5 py-1 rounded-full bg-[#ecfdf5] text-[#047857] border border-[#a7f3d0]';
+                    statusEl.classList.remove('hidden');
+                }
+
+                setTimeout(() => {
+                    const firstInput = getFirstInputForQuestion(qIdx);
+                    if (firstInput) {
+                        firstInput.focus();
+                        state.lastFocusedInput = firstInput;
+                    }
+                }, 100);
+            } else {
+                playTone(240, 'sawtooth', 0.18);
+                if (btnEl) {
+                    btnEl.classList.add('wrong-box');
+                    setTimeout(() => btnEl.classList.remove('wrong-box'), 500);
+                }
+                if (feedbackEl) {
+                    feedbackEl.textContent = '✗ Kurang tepat, coba baca lagi ceritanya dengan teliti ya!';
+                    feedbackEl.className = 'text-xs font-semibold text-[#be123c]';
+                    feedbackEl.classList.remove('hidden');
+                }
+            }
+        }
+
         function getFirstInputForQuestion(qIdx) {
             const q = state.questions[qIdx];
             if (!q) return null;
-            if (q.actualOp === 'bagi' && q.divisionData) {
+            if ((q.actualOp === 'bagi' && q.divisionData) || (q.actualOp === 'kali' && q.multiKaliData)) {
                 return document.getElementById(`ans-${qIdx}-0`);
             } else {
                 return document.getElementById(`ans-${qIdx}-${q.answerStr.length - 1}`);
             }
+        }
+
+        function isSequentialQuestion(q) {
+            return (q.actualOp === 'bagi' && q.divisionData) || (q.actualOp === 'kali' && q.multiKaliData);
+        }
+
+        function getTotalBoxesForQuestion(q) {
+            if (q.actualOp === 'bagi' && q.divisionData) return q.divisionData.flatInputs.length;
+            if (q.actualOp === 'kali' && q.multiKaliData) return q.multiKaliData.flatInputs.length;
+            return q.answerStr.length;
+        }
+
+        function isQuestionAllFilled(qIdx) {
+            const q = state.questions[qIdx];
+            if (!q) return false;
+            const totalBoxes = getTotalBoxesForQuestion(q);
+            for (let i = 0; i < totalBoxes; i++) {
+                const el = document.getElementById(`ans-${qIdx}-${i}`);
+                if (!el || el.value.trim() === '') {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function findNextEmptyInputForQuestion(qIdx, currentColIdx) {
+            const q = state.questions[qIdx];
+            if (!q) return null;
+            const totalBoxes = getTotalBoxesForQuestion(q);
+
+            if (isSequentialQuestion(q)) {
+                for (let i = currentColIdx + 1; i < totalBoxes; i++) {
+                    const el = document.getElementById(`ans-${qIdx}-${i}`);
+                    if (el && el.value.trim() === '') return el;
+                }
+                for (let i = 0; i < currentColIdx; i++) {
+                    const el = document.getElementById(`ans-${qIdx}-${i}`);
+                    if (el && el.value.trim() === '') return el;
+                }
+            } else {
+                for (let i = currentColIdx - 1; i >= 0; i--) {
+                    const el = document.getElementById(`ans-${qIdx}-${i}`);
+                    if (el && el.value.trim() === '') return el;
+                }
+                for (let i = totalBoxes - 1; i > currentColIdx; i--) {
+                    const el = document.getElementById(`ans-${qIdx}-${i}`);
+                    if (el && el.value.trim() === '') return el;
+                }
+            }
+            return null;
         }
 
         function setupInputNavigation() {
@@ -863,6 +1331,14 @@
                     e.target.value = clean.slice(-1);
                     if (e.target.value) playTone(660, 'sine', 0.06);
                 });
+
+                inp.addEventListener('keydown', (e) => {
+                    if (/^[0-9]$/.test(e.key)) {
+                        e.preventDefault();
+                        inp.value = e.key;
+                        inp.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                });
             });
 
             allAnsInputs.forEach(inp => {
@@ -876,22 +1352,13 @@
                         playTone(580, 'sine', 0.07);
                         const qIdx = parseInt(inp.getAttribute('data-q'));
                         const colIdx = parseInt(inp.getAttribute('data-col'));
-                        const q = state.questions[qIdx];
 
-                        if (q.actualOp === 'bagi' && q.divisionData) {
-                            const totalBoxes = q.divisionData.flatInputs.length;
-                            if (colIdx < totalBoxes - 1) {
-                                const nextInput = document.getElementById(`ans-${qIdx}-${colIdx + 1}`);
-                                if (nextInput) nextInput.focus();
-                            } else {
-                                autoVerifyIfComplete(qIdx);
-                            }
+                        if (isQuestionAllFilled(qIdx)) {
+                            autoVerifyIfComplete(qIdx);
                         } else {
-                            if (colIdx > 0) {
-                                const prevInput = document.getElementById(`ans-${qIdx}-${colIdx - 1}`);
-                                if (prevInput) prevInput.focus();
-                            } else {
-                                autoVerifyIfComplete(qIdx);
+                            const nextEmpty = findNextEmptyInputForQuestion(qIdx, colIdx);
+                            if (nextEmpty) {
+                                nextEmpty.focus();
                             }
                         }
                     }
@@ -901,11 +1368,18 @@
                     const qIdx = parseInt(inp.getAttribute('data-q'));
                     const colIdx = parseInt(inp.getAttribute('data-col'));
                     const q = state.questions[qIdx];
-                    const isDiv = q.actualOp === 'bagi' && q.divisionData;
-                    const maxLen = isDiv ? q.divisionData.flatInputs.length : q.answerStr.length;
+                    const isSeq = isSequentialQuestion(q);
+                    const maxLen = getTotalBoxesForQuestion(q);
+
+                    if (/^[0-9]$/.test(e.key)) {
+                        e.preventDefault();
+                        inp.value = e.key;
+                        inp.dispatchEvent(new Event('input', { bubbles: true }));
+                        return;
+                    }
 
                     if (e.key === 'Backspace' && inp.value === '') {
-                        if (isDiv) {
+                        if (isSeq) {
                             if (colIdx > 0) {
                                 const prevInput = document.getElementById(`ans-${qIdx}-${colIdx - 1}`);
                                 if (prevInput) {
@@ -934,7 +1408,7 @@
                 });
             });
 
-            if (state.questions.length > 0) {
+            if (state.questions.length > 0 && state.questions[0].opGuessed) {
                 const firstInput = getFirstInputForQuestion(0);
                 if (firstInput) {
                     firstInput.focus();
@@ -945,7 +1419,7 @@
 
         function inputFromNumpad(digit) {
             if (!state.lastFocusedInput || state.lastFocusedInput.disabled) {
-                const nextQ = state.questions.findIndex(q => !q.solved);
+                const nextQ = state.questions.findIndex(q => !q.solved && q.opGuessed);
                 if (nextQ !== -1) {
                     state.lastFocusedInput = getFirstInputForQuestion(nextQ);
                 } else {
@@ -969,9 +1443,7 @@
 
         function autoVerifyIfComplete(qIdx) {
             const q = state.questions[qIdx];
-            const totalBoxes = (q.actualOp === 'bagi' && q.divisionData)
-                ? q.divisionData.flatInputs.length
-                : q.answerStr.length;
+            const totalBoxes = getTotalBoxesForQuestion(q);
 
             let allFilled = true;
             for (let i = 0; i < totalBoxes; i++) {
@@ -990,11 +1462,18 @@
             const q = state.questions[qIdx];
             if (q.solved) return true;
 
-            const totalBoxes = (q.actualOp === 'bagi' && q.divisionData)
-                ? q.divisionData.flatInputs.length
-                : q.answerStr.length;
-
             const statusEl = document.getElementById(`status-${qIdx}`);
+            if (!q.opGuessed) {
+                if (!isAuto && statusEl) {
+                    statusEl.textContent = '⚠️ Pilih operasi hitung dulu';
+                    statusEl.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-300';
+                    statusEl.classList.remove('hidden');
+                    playTone(280, 'sawtooth', 0.15);
+                }
+                return false;
+            }
+
+            const totalBoxes = getTotalBoxesForQuestion(q);
             let allFilled = true;
 
             for (let i = 0; i < totalBoxes; i++) {
@@ -1013,6 +1492,7 @@
             }
 
             let isCorrect = true;
+            let firstWrongInput = null;
             for (let i = 0; i < totalBoxes; i++) {
                 const el = document.getElementById(`ans-${qIdx}-${i}`);
                 const expected = el.getAttribute('data-expected');
@@ -1021,6 +1501,7 @@
                     el.classList.add('correct-box');
                 } else {
                     el.classList.add('wrong-box');
+                    if (!firstWrongInput) firstWrongInput = el;
                     isCorrect = false;
                 }
             }
@@ -1052,9 +1533,9 @@
                 statusEl.classList.remove('hidden');
                 playTone(784, 'triangle', 0.18);
 
-                let nextQ = state.questions.findIndex((item, idx) => idx > qIdx && !item.solved);
+                let nextQ = state.questions.findIndex((item, idx) => idx > qIdx && !item.solved && item.opGuessed);
                 if (nextQ === -1) {
-                    nextQ = state.questions.findIndex(item => !item.solved);
+                    nextQ = state.questions.findIndex(item => !item.solved && item.opGuessed);
                 }
 
                 if (nextQ !== -1) {
@@ -1077,6 +1558,12 @@
                 statusEl.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300';
                 statusEl.classList.remove('hidden');
                 playTone(220, 'sawtooth', 0.2);
+                if (firstWrongInput) {
+                    setTimeout(() => {
+                        firstWrongInput.focus();
+                        state.lastFocusedInput = firstWrongInput;
+                    }, 80);
+                }
                 return false;
             }
         }
@@ -1130,9 +1617,9 @@
                 cerita: 'Soal Cerita'
             };
             const difLabels = {
-                mudah: 'Mudah',
-                sedang: 'Sedang',
-                sulit: 'Sulit'
+                mudah: 'Pemula',
+                sedang: 'Mahir',
+                sulit: `Juara • Tingkat ${state.juaraTier}`
             };
 
             const badgeEl = document.getElementById('category-level-badge');
