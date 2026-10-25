@@ -122,6 +122,15 @@
                 </p>
             </header>
 
+            <!-- Tombol Beralih ke Soal Pecahan Biasa -->
+            <button onclick="toggleFractionMode()" id="fraction-mode-btn" class="neo-btn bg-white hover:bg-blue-50/70 text-[#1e3a8a] font-semibold px-3.5 py-2.5 rounded-2xl text-xs md:text-sm flex items-center justify-between gap-2 w-full">
+                <span class="flex items-center gap-2.5">
+                    <span id="fraction-mode-icon" class="w-7 h-7 rounded-lg bg-[#dbeafe] text-[#1d4ed8] flex items-center justify-center font-bold text-sm">½</span>
+                    <span id="fraction-mode-label">Beralih ke Soal Pecahan Biasa</span>
+                </span>
+                <span id="fraction-mode-badge" class="text-[11px] px-2.5 py-0.5 rounded-full bg-[#eef6ff] border border-[#bfdbfe] text-[#1d4ed8] font-semibold">Mode: Bersusun</span>
+            </button>
+
             <!-- 5 Tombol Operasi Hitung -->
             <div class="grid grid-cols-5 gap-2">
                 <button onclick="setOperation('tambah')" id="op-tambah" class="op-btn neo-btn neo-btn-active bg-white rounded-2xl p-2.5 flex flex-col items-center justify-center gap-1">
@@ -273,6 +282,7 @@
             operation: 'tambah',
             difficulty: 'mudah',
             juaraTier: 1,
+            isFractionMode: false,
             showCarry: true,
             stats: createInitialStats(),
             soundEnabled: true,
@@ -286,7 +296,14 @@
         }
 
         function getCurrentStats() {
-            return state.stats[state.operation][getStatKey()];
+            const opKey = state.isFractionMode ? `${state.operation}_pecahan` : state.operation;
+            if (!state.stats[opKey]) {
+                state.stats[opKey] = {};
+                DIFFICULTIES.forEach(dif => {
+                    state.stats[opKey][dif] = { score: 0, streak: 0 };
+                });
+            }
+            return state.stats[opKey][getStatKey()];
         }
 
         function updateScoreUI() {
@@ -308,8 +325,33 @@
             };
             const badge = document.getElementById('category-level-badge');
             if (badge) {
-                badge.textContent = `${opNames[state.operation]} • ${difNames[state.difficulty]}`;
+                const modePrefix = state.isFractionMode ? 'Pecahan • ' : '';
+                badge.textContent = `${modePrefix}${opNames[state.operation]} • ${difNames[state.difficulty]}`;
             }
+        }
+
+        function toggleFractionMode() {
+            state.isFractionMode = !state.isFractionMode;
+            playTone(500, 'triangle', 0.1);
+
+            const btn = document.getElementById('fraction-mode-btn');
+            const label = document.getElementById('fraction-mode-label');
+            const modeBadge = document.getElementById('fraction-mode-badge');
+            const icon = document.getElementById('fraction-mode-icon');
+
+            if (state.isFractionMode) {
+                btn.classList.add('neo-btn-active');
+                label.textContent = 'Kembali ke Berhitung Bersusun';
+                modeBadge.textContent = 'Mode: Pecahan Biasa';
+                icon.textContent = '🔢';
+            } else {
+                btn.classList.remove('neo-btn-active');
+                label.textContent = 'Beralih ke Soal Pecahan Biasa';
+                modeBadge.textContent = 'Mode: Bersusun';
+                icon.textContent = '½';
+            }
+
+            setOperation(state.operation);
         }
 
         let audioCtx = null;
@@ -341,6 +383,51 @@
             document.querySelectorAll('.op-btn').forEach(btn => btn.classList.remove('neo-btn-active'));
             document.getElementById(`op-${op}`).classList.add('neo-btn-active');
 
+            const s1 = document.getElementById('guide-step-1');
+            const s2 = document.getElementById('guide-step-2');
+            const s3 = document.getElementById('guide-step-3');
+            const headerDesc = document.getElementById('header-desc');
+            const carryWrapper = document.getElementById('carry-toggle-wrapper');
+
+            if (state.isFractionMode) {
+                const fracTitles = {
+                    tambah: '▶ Panduan langkah penjumlahan pecahan biasa',
+                    kurang: '▶ Panduan langkah pengurangan pecahan biasa',
+                    kali: '▶ Panduan langkah perkalian pecahan biasa',
+                    bagi: '▶ Panduan langkah pembagian pecahan biasa',
+                    cerita: '▶ Panduan menyelesaikan soal cerita pecahan biasa'
+                };
+                document.getElementById('guide-title').textContent = fracTitles[op];
+                carryWrapper.classList.add('hidden');
+
+                if (op === 'tambah' || op === 'kurang') {
+                    headerDesc.innerHTML = 'Operasi <b class="text-[#1d4ed8]">Pecahan Biasa</b>: Isi kotak pembilang (atas) dan penyebut (bawah) sesuai urutan langkah. Jika penyebut berbeda, samakan penyebutnya terlebih dahulu.';
+                    s1.innerHTML = '1. Perhatikan penyebut (angka bawah). Jika sudah sama, langsung hitung pembilangnya.';
+                    s2.innerHTML = '2. Jika penyebut berbeda, samakan penyebut dengan KPK terlebih dahulu pada kotak langkah di sebelah kanan.';
+                    s3.innerHTML = '3. Kursor otomatis berpindah ke kotak berikutnya setiap kali kamu mengetik angka!';
+                } else if (op === 'kali') {
+                    headerDesc.innerHTML = 'Perkalian <b class="text-[#1d4ed8]">Pecahan Biasa</b>: Kalikan <b>pembilang dengan pembilang</b> (atas × atas) dan <b>penyebut dengan penyebut</b> (bawah × bawah).';
+                    s1.innerHTML = '1. Kalikan angka pembilang (atas) lalu tulis hasilnya di kotak atas.';
+                    s2.innerHTML = '2. Kalikan angka penyebut (bawah) lalu tulis hasilnya di kotak bawah.';
+                    s3.innerHTML = '3. Kursor otomatis berpindah ke kotak berikutnya setiap kali kamu mengetik angka!';
+                } else if (op === 'bagi') {
+                    headerDesc.innerHTML = 'Pembagian <b class="text-[#1d4ed8]">Pecahan Biasa</b>: Ubah tanda bagi (<b>:</b>) menjadi kali (<b>×</b>) dengan <b>membalik pecahan pembagi</b>, lalu kalikan.';
+                    s1.innerHTML = '1. Balik posisi pembilang dan penyebut pada pecahan kedua di kotak langkah perkalian.';
+                    s2.innerHTML = '2. Kalikan pembilang dengan pembilang, lalu penyebut dengan penyebut.';
+                    s3.innerHTML = '3. Kursor otomatis berpindah ke kotak berikutnya setiap kali kamu mengetik angka!';
+                } else {
+                    headerDesc.innerHTML = 'Baca cerita pecahan dengan teliti, <b class="text-[#1d4ed8]">pilih tombol operasi hitung yang tepat</b> (Tambah, Kurang, Kali, atau Bagi), lalu selesaikan pecahan biasanya.';
+                    s1.innerHTML = '1. Baca soal cerita pecahan dan tentukan operasi hitungnya.';
+                    s2.innerHTML = '2. Tekan tombol operasi hitung yang tepat untuk membuka lembar kerja pecahan.';
+                    s3.innerHTML = '3. Isi seluruh kotak pembilang dan penyebut sampai benar!';
+                }
+
+                state.questionSeq = 0;
+                updateScoreUI();
+                generateAllQuestions();
+                return;
+            }
+
             const titles = {
                 tambah: '▶ Panduan langkah menghitung tambah bersusun',
                 kurang: '▶ Panduan langkah menghitung kurang bersusun',
@@ -349,11 +436,6 @@
                 cerita: '▶ Panduan menyelesaikan soal cerita bersusun'
             };
             document.getElementById('guide-title').textContent = titles[op];
-
-            const s1 = document.getElementById('guide-step-1');
-            const s2 = document.getElementById('guide-step-2');
-            const s3 = document.getElementById('guide-step-3');
-            const headerDesc = document.getElementById('header-desc');
 
             if (op === 'kurang') {
                 headerDesc.innerHTML = 'Isi setiap kotak dengan satu angka. Kerjakan dari <b class="text-[#1d4ed8]">kanan ke kiri</b>; setelah mengetik, kursor pindah sendiri ke kotak sebelah kiri.';
@@ -382,7 +464,6 @@
                 s3.innerHTML = '3. Kursor otomatis bergeser ke kiri setiap kali kamu selesai mengetik 1 angka!';
             }
 
-            const carryWrapper = document.getElementById('carry-toggle-wrapper');
             if (op === 'kurang' || op === 'bagi') {
                 carryWrapper.classList.add('hidden');
             } else {
@@ -444,6 +525,339 @@
 
         function randInt(min, max) {
             return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function gcd(a, b) {
+            return b === 0 ? a : gcd(b, a % b);
+        }
+
+        function lcm(a, b) {
+            return (a * b) / gcd(a, b);
+        }
+
+        function pushFractionTermBoxes(expectedBoxes, numVal, denVal, numHint, denHint) {
+            const numStr = String(numVal);
+            const denStr = String(denVal);
+            const numBoxIndices = [];
+            const denBoxIndices = [];
+
+            for (let i = 0; i < numStr.length; i++) {
+                numBoxIndices.push(expectedBoxes.length);
+                expectedBoxes.push({ val: numStr[i], hint: numHint });
+            }
+            for (let i = 0; i < denStr.length; i++) {
+                denBoxIndices.push(expectedBoxes.length);
+                expectedBoxes.push({ val: denStr[i], hint: denHint });
+            }
+
+            return { numBoxIndices, denBoxIndices };
+        }
+
+        function createFractionQuestion(index) {
+            let actualOp = state.operation;
+            if (state.operation === 'cerita') {
+                const ops = ['tambah', 'kurang', 'kali', 'bagi'];
+                actualOp = ops[index % ops.length];
+            }
+
+            const dif = state.difficulty;
+            const tier = state.juaraTier;
+            const symbolMap = { tambah: '+', kurang: '−', kali: '×', bagi: ':' };
+            const symbol = symbolMap[actualOp];
+
+            const givenFractions = [];
+            const stepGroups = [];
+            const expectedBoxes = [];
+            let storyText = '';
+
+            if (actualOp === 'tambah') {
+                if (dif === 'mudah') {
+                    const den = randInt(3, 9);
+                    const n1 = randInt(1, den - 2);
+                    const n2 = randInt(1, den - n1);
+                    const ansNum = n1 + n2;
+                    givenFractions.push({ num: n1, den }, { num: n2, den });
+
+                    const finalBoxes = pushFractionTermBoxes(
+                        expectedBoxes,
+                        ansNum,
+                        den,
+                        `Langkah 1: Jumlahkan pembilang ${n1} + ${n2} = ${ansNum} (Tulis di kotak atas)`,
+                        `Langkah 2: Penyebut tetap ${den} (Tulis di kotak bawah)`
+                    );
+                    stepGroups.push({ type: 'final', terms: [finalBoxes] });
+                } else if (dif === 'sedang' || (dif === 'sulit' && tier === 1)) {
+                    const pairs = dif === 'sedang'
+                        ? [[2, 3], [2, 4], [3, 4], [2, 5], [3, 6], [2, 6], [4, 6]]
+                        : [[3, 5], [4, 5], [3, 7], [4, 7], [5, 6], [3, 8], [5, 8]];
+                    const [d1, d2] = pairs[randInt(0, pairs.length - 1)];
+                    const commonDen = lcm(d1, d2);
+                    const n1 = randInt(1, d1 - 1);
+                    const n2 = randInt(1, d2 - 1);
+                    const eq1 = n1 * (commonDen / d1);
+                    const eq2 = n2 * (commonDen / d2);
+                    const ansNum = eq1 + eq2;
+
+                    givenFractions.push({ num: n1, den: d1 }, { num: n2, den: d2 });
+
+                    const t1 = pushFractionTermBoxes(
+                        expectedBoxes,
+                        eq1,
+                        commonDen,
+                        `Langkah 1: Ubah ${n1}/${d1} ke penyebut ${commonDen} → Pembilang = ${n1} × ${commonDen / d1} = ${eq1}`,
+                        `Langkah 1: Tulis penyebut bersama (KPK dari ${d1} dan ${d2}) = ${commonDen}`
+                    );
+                    const t2 = pushFractionTermBoxes(
+                        expectedBoxes,
+                        eq2,
+                        commonDen,
+                        `Langkah 2: Ubah ${n2}/${d2} ke penyebut ${commonDen} → Pembilang = ${n2} × ${commonDen / d2} = ${eq2}`,
+                        `Langkah 2: Tulis penyebut bersama (KPK) = ${commonDen}`
+                    );
+                    stepGroups.push({ type: 'intermediate', opSymbol: '+', terms: [t1, t2] });
+
+                    const finalBoxes = pushFractionTermBoxes(
+                        expectedBoxes,
+                        ansNum,
+                        commonDen,
+                        `Langkah Akhir: Jumlahkan pembilang ${eq1} + ${eq2} = ${ansNum}`,
+                        `Langkah Akhir: Tulis penyebut ${commonDen}`
+                    );
+                    stepGroups.push({ type: 'final', terms: [finalBoxes] });
+                } else {
+                    const triplets = tier === 2
+                        ? [[2, 4, 4], [2, 3, 6], [3, 6, 6], [2, 5, 10], [4, 8, 8]]
+                        : [[2, 3, 4], [2, 3, 5], [3, 4, 6], [2, 4, 5], [3, 5, 15]];
+                    const [d1, d2, d3] = triplets[randInt(0, triplets.length - 1)];
+                    const commonDen = lcm(lcm(d1, d2), d3);
+                    const n1 = randInt(1, d1 - 1);
+                    const n2 = randInt(1, d2 - 1);
+                    const n3 = randInt(1, d3 - 1);
+                    const eq1 = n1 * (commonDen / d1);
+                    const eq2 = n2 * (commonDen / d2);
+                    const eq3 = n3 * (commonDen / d3);
+                    const ansNum = eq1 + eq2 + eq3;
+
+                    givenFractions.push({ num: n1, den: d1 }, { num: n2, den: d2 }, { num: n3, den: d3 });
+
+                    const t1 = pushFractionTermBoxes(
+                        expectedBoxes,
+                        eq1,
+                        commonDen,
+                        `Langkah 1: Ubah ${n1}/${d1} ke penyebut ${commonDen} → Pembilang = ${eq1}`,
+                        `Langkah 1: Tulis penyebut KPK = ${commonDen}`
+                    );
+                    const t2 = pushFractionTermBoxes(
+                        expectedBoxes,
+                        eq2,
+                        commonDen,
+                        `Langkah 2: Ubah ${n2}/${d2} ke penyebut ${commonDen} → Pembilang = ${eq2}`,
+                        `Langkah 2: Tulis penyebut KPK = ${commonDen}`
+                    );
+                    const t3 = pushFractionTermBoxes(
+                        expectedBoxes,
+                        eq3,
+                        commonDen,
+                        `Langkah 3: Ubah ${n3}/${d3} ke penyebut ${commonDen} → Pembilang = ${eq3}`,
+                        `Langkah 3: Tulis penyebut KPK = ${commonDen}`
+                    );
+                    stepGroups.push({ type: 'intermediate', opSymbol: '+', terms: [t1, t2, t3] });
+
+                    const finalBoxes = pushFractionTermBoxes(
+                        expectedBoxes,
+                        ansNum,
+                        commonDen,
+                        `Langkah Akhir: Jumlahkan pembilang ${eq1} + ${eq2} + ${eq3} = ${ansNum}`,
+                        `Langkah Akhir: Tulis penyebut ${commonDen}`
+                    );
+                    stepGroups.push({ type: 'final', terms: [finalBoxes] });
+                }
+            } else if (actualOp === 'kurang') {
+                if (dif === 'mudah') {
+                    const den = randInt(4, 9);
+                    const n1 = randInt(3, den - 1);
+                    const n2 = randInt(1, n1 - 1);
+                    const ansNum = n1 - n2;
+                    givenFractions.push({ num: n1, den }, { num: n2, den });
+
+                    const finalBoxes = pushFractionTermBoxes(
+                        expectedBoxes,
+                        ansNum,
+                        den,
+                        `Langkah 1: Kurangkan pembilang ${n1} − ${n2} = ${ansNum} (Tulis di kotak atas)`,
+                        `Langkah 2: Penyebut tetap ${den} (Tulis di kotak bawah)`
+                    );
+                    stepGroups.push({ type: 'final', terms: [finalBoxes] });
+                } else {
+                    const pairs = dif === 'sedang'
+                        ? [[2, 3], [3, 4], [2, 5], [3, 5], [4, 6]]
+                        : (tier === 1
+                            ? [[3, 5], [4, 5], [5, 6], [3, 7], [4, 7]]
+                            : (tier === 2
+                                ? [[4, 7], [5, 8], [3, 8], [5, 7], [6, 8]]
+                                : [[5, 9], [7, 8], [5, 12], [7, 10], [4, 9]]));
+                    const [d1, d2] = pairs[randInt(0, pairs.length - 1)];
+                    const commonDen = lcm(d1, d2);
+                    let n1 = d1 - 1;
+                    let n2 = 1;
+                    let eq1 = n1 * (commonDen / d1);
+                    let eq2 = n2 * (commonDen / d2);
+                    if (eq1 <= eq2) {
+                        const tmpD = d1;
+                        givenFractions.push({ num: n2, den: d2 }, { num: n1, den: tmpD });
+                        const tmpEq = eq1;
+                        eq1 = eq2;
+                        eq2 = tmpEq;
+                    } else {
+                        givenFractions.push({ num: n1, den: d1 }, { num: n2, den: d2 });
+                    }
+                    const ansNum = eq1 - eq2;
+                    const g0 = givenFractions[0];
+                    const g1 = givenFractions[1];
+
+                    const t1 = pushFractionTermBoxes(
+                        expectedBoxes,
+                        eq1,
+                        commonDen,
+                        `Langkah 1: Ubah ${g0.num}/${g0.den} ke penyebut ${commonDen} → Pembilang = ${eq1}`,
+                        `Langkah 1: Tulis penyebut bersama (KPK) = ${commonDen}`
+                    );
+                    const t2 = pushFractionTermBoxes(
+                        expectedBoxes,
+                        eq2,
+                        commonDen,
+                        `Langkah 2: Ubah ${g1.num}/${g1.den} ke penyebut ${commonDen} → Pembilang = ${eq2}`,
+                        `Langkah 2: Tulis penyebut bersama (KPK) = ${commonDen}`
+                    );
+                    stepGroups.push({ type: 'intermediate', opSymbol: '−', terms: [t1, t2] });
+
+                    const finalBoxes = pushFractionTermBoxes(
+                        expectedBoxes,
+                        ansNum,
+                        commonDen,
+                        `Langkah Akhir: Kurangkan pembilang ${eq1} − ${eq2} = ${ansNum}`,
+                        `Langkah Akhir: Tulis penyebut ${commonDen}`
+                    );
+                    stepGroups.push({ type: 'final', terms: [finalBoxes] });
+                }
+            } else if (actualOp === 'kali') {
+                if (dif === 'sulit' && tier >= 2) {
+                    const maxD = tier === 2 ? 5 : 7;
+                    const d1 = randInt(2, maxD), d2 = randInt(2, maxD), d3 = randInt(2, maxD);
+                    const n1 = randInt(1, d1 - 1), n2 = randInt(1, d2 - 1), n3 = randInt(1, d3 - 1);
+                    const ansNum = n1 * n2 * n3;
+                    const ansDen = d1 * d2 * d3;
+                    givenFractions.push({ num: n1, den: d1 }, { num: n2, den: d2 }, { num: n3, den: d3 });
+
+                    const finalBoxes = pushFractionTermBoxes(
+                        expectedBoxes,
+                        ansNum,
+                        ansDen,
+                        `Langkah 1: Kalikan semua pembilang ${n1} × ${n2} × ${n3} = ${ansNum}`,
+                        `Langkah 2: Kalikan semua penyebut ${d1} × ${d2} × ${d3} = ${ansDen}`
+                    );
+                    stepGroups.push({ type: 'final', terms: [finalBoxes] });
+                } else {
+                    const maxD = dif === 'mudah' ? 5 : (dif === 'sedang' ? 8 : 11);
+                    const d1 = randInt(2, maxD);
+                    const d2 = randInt(2, maxD);
+                    const n1 = randInt(1, d1 - 1);
+                    const n2 = randInt(1, d2 - 1);
+                    const ansNum = n1 * n2;
+                    const ansDen = d1 * d2;
+                    givenFractions.push({ num: n1, den: d1 }, { num: n2, den: d2 });
+
+                    const finalBoxes = pushFractionTermBoxes(
+                        expectedBoxes,
+                        ansNum,
+                        ansDen,
+                        `Langkah 1: Kalikan pembilang ${n1} × ${n2} = ${ansNum} (Tulis di kotak atas)`,
+                        `Langkah 2: Kalikan penyebut ${d1} × ${d2} = ${ansDen} (Tulis di kotak bawah)`
+                    );
+                    stepGroups.push({ type: 'final', terms: [finalBoxes] });
+                }
+            } else if (actualOp === 'bagi') {
+                const maxD = dif === 'mudah' ? 5 : (dif === 'sedang' ? 8 : (tier === 1 ? 10 : (tier === 2 ? 12 : 14)));
+                const d1 = randInt(2, maxD);
+                const d2 = randInt(2, maxD);
+                const n1 = randInt(1, d1 - 1);
+                const n2 = randInt(1, d2 - 1);
+                const ansNum = n1 * d2;
+                const ansDen = d1 * n2;
+                givenFractions.push({ num: n1, den: d1 }, { num: n2, den: d2 });
+
+                const flippedBoxes = pushFractionTermBoxes(
+                    expectedBoxes,
+                    d2,
+                    n2,
+                    `Langkah 1: Balik pecahan kedua (${n2}/${d2} menjadi ${d2}/${n2}) → Tulis ${d2} di atas`,
+                    `Langkah 1: Tulis ${n2} di kotak bawah pecahan yang dibalik`
+                );
+                stepGroups.push({
+                    type: 'intermediate_divide',
+                    firstFrac: { num: n1, den: d1 },
+                    flippedTerm: flippedBoxes
+                });
+
+                const finalBoxes = pushFractionTermBoxes(
+                    expectedBoxes,
+                    ansNum,
+                    ansDen,
+                    `Langkah Akhir: Kalikan pembilang ${n1} × ${d2} = ${ansNum}`,
+                    `Langkah Akhir: Kalikan penyebut ${d1} × ${n2} = ${ansDen}`
+                );
+                stepGroups.push({ type: 'final', terms: [finalBoxes] });
+            }
+
+            const exprText = givenFractions.map(f => `${f.num}/${f.den}`).join(` ${symbol} `);
+
+            if (state.operation === 'cerita') {
+                const names = ['Siti', 'Budi', 'Rina', 'Doni', 'Putri', 'Bagas'];
+                const name = names[(index + randInt(0, 3)) % names.length];
+                const f0 = `${givenFractions[0].num}/${givenFractions[0].den}`;
+                const f1 = `${givenFractions[1].num}/${givenFractions[1].den}`;
+                const f2 = givenFractions[2] ? `${givenFractions[2].num}/${givenFractions[2].den}` : null;
+
+                if (actualOp === 'tambah') {
+                    if (f2) {
+                        storyText = `${name} mencampur <b>${f0}</b> kg tepung terigu, <b>${f1}</b> kg tepung beras, dan <b>${f2}</b> kg gula halus untuk membuat kue. Berapa kg berat campuran seluruh bahan tersebut?`;
+                    } else {
+                        storyText = `Ibu memiliki <b>${f0}</b> meter pita merah dan membeli lagi <b>${f1}</b> meter pita biru. Berapa meter panjang seluruh pita Ibu sekarang?`;
+                    }
+                } else if (actualOp === 'kurang') {
+                    storyText = `${name} memiliki <b>${f0}</b> liter susu segar di dalam botol. Sebanyak <b>${f1}</b> liter susu diminum saat sarapan. Berapa liter sisa susu ${name}?`;
+                } else if (actualOp === 'kali') {
+                    if (f2) {
+                        storyText = `Sebuah kebun luasnya <b>${f0}</b> hektare. Sebanyak <b>${f1}</b> bagian ditanami sayur, dan <b>${f2}</b> dari bagian sayur tersebut adalah bayam. Berapa hektare luas kebun bayam?`;
+                    } else {
+                        storyText = `Resep kue membutuhkan <b>${f1}</b> kg mentega. Jika ${name} hanya ingin membuat <b>${f0}</b> bagian dari resep tersebut, berapa kg mentega yang dibutuhkan?`;
+                    }
+                } else if (actualOp === 'bagi') {
+                    storyText = `Terdapat <b>${f0}</b> liter madu yang akan dituangkan ke dalam botol-botol kecil. Setiap botol kecil memuat <b>${f1}</b> liter madu. Berapa bagian botol yang dapat terisi?`;
+                }
+            }
+
+            return {
+                id: index + 1,
+                num1: 0,
+                num2: 0,
+                num3: null,
+                symbol,
+                actualOp,
+                answer: 0,
+                divData: null,
+                multData: null,
+                fracData: {
+                    givenFractions,
+                    symbol,
+                    stepGroups,
+                    expectedBoxes,
+                    exprText
+                },
+                storyText,
+                opGuessed: state.operation !== 'cerita',
+                solved: false
+            };
         }
 
         function buildDivisionData(divisor, quotient) {
@@ -614,6 +1028,10 @@
         }
 
         function createSingleQuestion(index) {
+            if (state.isFractionMode) {
+                return createFractionQuestion(index);
+            }
+
             let actualOp = state.operation;
             let storyText = '';
 
@@ -802,9 +1220,11 @@
 
                 const exprEl = document.getElementById(`header-expr-${qIdx}`);
                 if (exprEl) {
-                    exprEl.textContent = q.num3 !== null
-                        ? `${q.num1} ${q.symbol} ${q.num2} ${q.symbol} ${q.num3}`
-                        : `${q.num1} ${q.symbol} ${q.num2}`;
+                    exprEl.textContent = q.fracData
+                        ? q.fracData.exprText
+                        : (q.num3 !== null
+                            ? `${q.num1} ${q.symbol} ${q.num2} ${q.symbol} ${q.num3}`
+                            : `${q.num1} ${q.symbol} ${q.num2}`);
                 }
 
                 setTimeout(() => {
@@ -843,7 +1263,9 @@
 
                 let innerMathHtml = '';
 
-                if (q.actualOp === 'bagi' && q.divData) {
+                if (q.fracData) {
+                    innerMathHtml = renderFractionCard(q, qIndex);
+                } else if (q.actualOp === 'bagi' && q.divData) {
                     innerMathHtml = renderDivisionCard(q, qIndex);
                 } else if (q.actualOp === 'kali' && q.multData) {
                     innerMathHtml = renderMultiRowMultiplyCard(q, qIndex);
@@ -945,9 +1367,11 @@
                     `;
                 }
 
-                const fullExprText = q.num3 !== null
-                    ? `${q.num1} ${q.symbol} ${q.num2} ${q.symbol} ${q.num3}`
-                    : `${q.num1} ${q.symbol} ${q.num2}`;
+                const fullExprText = q.fracData
+                    ? q.fracData.exprText
+                    : (q.num3 !== null
+                        ? `${q.num1} ${q.symbol} ${q.num2} ${q.symbol} ${q.num3}`
+                        : `${q.num1} ${q.symbol} ${q.num2}`);
                 const displayHeader = q.opGuessed ? fullExprText : 'Soal Cerita • Pilih Operasi Hitung';
 
                 const storyPickerHtml = (!q.opGuessed) ? `
@@ -1345,12 +1769,118 @@
             }
         }
 
+        function renderFractionTermBoxes(qIndex, termObj, expectedBoxes, isFinal) {
+            const renderBoxRow = (indices) => indices.map(bIdx => {
+                const exp = expectedBoxes[bIdx].val;
+                const hint = expectedBoxes[bIdx].hint;
+                const colorCls = isFinal
+                    ? 'text-[#047857] bg-[#f2fbf7] border-[#6ee7b7]'
+                    : 'text-[#1e293b] bg-[#f8fbff]';
+                return `
+                    <div class="relative flex justify-center">
+                        <span class="absolute -top-2 -left-1 w-4 h-4 rounded-full bg-[#3b82f6] text-white text-[10px] font-bold flex items-center justify-center z-10">${bIdx + 1}</span>
+                        <input type="text" inputmode="none" maxlength="1"
+                            id="ans-${qIndex}-${bIdx}"
+                            data-q="${qIndex}"
+                            data-col="${bIdx}"
+                            data-expected="${exp}"
+                            data-hint="${hint}"
+                            onfocus="updateFracHint(${qIndex}, this.dataset.hint)"
+                            class="ans-box dashed-box w-10 h-11 rounded-xl text-center font-bold text-xl ${colorCls}">
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="inline-flex flex-col items-center gap-1.5 px-1">
+                    <div class="flex gap-1 justify-center">
+                        ${renderBoxRow(termObj.numBoxIndices)}
+                    </div>
+                    <div class="w-full min-w-[44px] border-b-2 border-[#60a5fa]"></div>
+                    <div class="flex gap-1 justify-center">
+                        ${renderBoxRow(termObj.denBoxIndices)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStaticFraction(num, den) {
+            return `
+                <div class="inline-flex flex-col items-center justify-center px-2">
+                    <div class="h-11 flex items-center justify-center font-bold text-2xl text-[#1e293b]">${num}</div>
+                    <div class="w-full min-w-[36px] border-b-2 border-[#60a5fa]"></div>
+                    <div class="h-11 flex items-center justify-center font-bold text-2xl text-[#1e293b]">${den}</div>
+                </div>
+            `;
+        }
+
+        function renderFractionCard(q, qIndex) {
+            const f = q.fracData;
+            const firstHint = f.expectedBoxes[0] ? f.expectedBoxes[0].hint : '';
+
+            const givenHtml = f.givenFractions.map((fr, idx) => {
+                const opHtml = idx > 0
+                    ? `<div class="px-1.5 font-bold text-2xl text-[#2563eb] select-none">${f.symbol}</div>`
+                    : '';
+                return `${opHtml}${renderStaticFraction(fr.num, fr.den)}`;
+            }).join('');
+
+            let stepsHtml = '';
+            f.stepGroups.forEach(group => {
+                if (group.type === 'intermediate') {
+                    const termsHtml = group.terms.map((t, idx) => {
+                        const op = idx > 0
+                            ? `<div class="px-1 font-bold text-2xl text-[#2563eb] select-none">${group.opSymbol}</div>`
+                            : '';
+                        return `${op}${renderFractionTermBoxes(qIndex, t, f.expectedBoxes, false)}`;
+                    }).join('');
+                    stepsHtml += `
+                        <div class="px-1.5 font-bold text-2xl text-[#2563eb] select-none">=</div>
+                        ${termsHtml}
+                    `;
+                } else if (group.type === 'intermediate_divide') {
+                    stepsHtml += `
+                        <div class="px-1.5 font-bold text-2xl text-[#2563eb] select-none">=</div>
+                        ${renderStaticFraction(group.firstFrac.num, group.firstFrac.den)}
+                        <div class="px-1 font-bold text-2xl text-[#059669] select-none">×</div>
+                        ${renderFractionTermBoxes(qIndex, group.flippedTerm, f.expectedBoxes, false)}
+                    `;
+                } else if (group.type === 'final') {
+                    stepsHtml += `
+                        <div class="px-1.5 font-bold text-2xl text-[#2563eb] select-none">=</div>
+                        ${renderFractionTermBoxes(qIndex, group.terms[0], f.expectedBoxes, true)}
+                    `;
+                }
+            });
+
+            return `
+                <div class="flex flex-col items-center w-full">
+                    <div id="frac-hint-${qIndex}" class="mb-4 px-3.5 py-2 rounded-xl bg-[#eef6ff] border border-[#bfdbfe] text-[#1e3a8a] text-xs font-medium text-center max-w-md">
+                        💡 ${firstHint}
+                    </div>
+                    <div class="flex flex-wrap items-center justify-center gap-y-4 py-2">
+                        ${givenHtml}
+                        ${stepsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateFracHint(qIndex, hintText) {
+            const el = document.getElementById(`frac-hint-${qIndex}`);
+            if (el && hintText) {
+                el.innerHTML = `💡 ${hintText}`;
+            }
+        }
+
         function isQuestionAllFilled(qIdx) {
             const q = state.questions[qIdx];
             if (!q) return false;
-            const totalBoxes = q.divData
-                ? q.divData.expectedBoxes.length
-                : (q.multData ? q.multData.expectedBoxes.length : String(q.answer).length);
+            const totalBoxes = q.fracData
+                ? q.fracData.expectedBoxes.length
+                : (q.divData
+                    ? q.divData.expectedBoxes.length
+                    : (q.multData ? q.multData.expectedBoxes.length : String(q.answer).length));
             for (let i = 0; i < totalBoxes; i++) {
                 const el = document.getElementById(`ans-${qIdx}-${i}`);
                 if (!el || el.value.trim() === '') return false;
@@ -1361,9 +1891,11 @@
         function findNextEmptyInputForQuestion(qIdx, startAfterCol) {
             const q = state.questions[qIdx];
             if (!q) return null;
-            const totalBoxes = q.divData
-                ? q.divData.expectedBoxes.length
-                : (q.multData ? q.multData.expectedBoxes.length : String(q.answer).length);
+            const totalBoxes = q.fracData
+                ? q.fracData.expectedBoxes.length
+                : (q.divData
+                    ? q.divData.expectedBoxes.length
+                    : (q.multData ? q.multData.expectedBoxes.length : String(q.answer).length));
 
             for (let offset = 1; offset <= totalBoxes; offset++) {
                 const idx = (startAfterCol + offset) % totalBoxes;
@@ -1453,9 +1985,11 @@
 
             if (q.solved) return true;
 
-            const totalBoxes = q.divData
-                ? q.divData.expectedBoxes.length
-                : (q.multData ? q.multData.expectedBoxes.length : String(q.answer).length);
+            const totalBoxes = q.fracData
+                ? q.fracData.expectedBoxes.length
+                : (q.divData
+                    ? q.divData.expectedBoxes.length
+                    : (q.multData ? q.multData.expectedBoxes.length : String(q.answer).length));
             let isCorrect = true;
             let allFilled = true;
             let firstWrongInput = null;
